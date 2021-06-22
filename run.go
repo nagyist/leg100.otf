@@ -2,11 +2,22 @@ package ots
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"net/url"
 	"time"
+
+	tfe "github.com/hashicorp/go-tfe"
 )
+
+type RunService interface {
+	CreateRun(opts *tfe.RunCreateOptions) (*Run, error)
+	ApplyRun(id string, opts *tfe.RunApplyOptions) error
+	GetRun(id string) (*Run, error)
+	ListRuns(workspaceID string, opts ListOptions) (*RunList, error)
+	DiscardRun(id string, opts *tfe.RunDiscardOptions) error
+	CancelRun(id string, opts *tfe.RunCancelOptions) error
+	ForceCancelRun(id string, opts *tfe.RunForceCancelOptions) error
+}
 
 // RunList represents a list of runs.
 type RunList struct {
@@ -28,8 +39,8 @@ type Run struct {
 	Refresh                bool                 `jsonapi:"attr,refresh"`
 	RefreshOnly            bool                 `jsonapi:"attr,refresh-only"`
 	ReplaceAddrs           []string             `jsonapi:"attr,replace-addrs,omitempty"`
-	Source                 RunSource            `jsonapi:"attr,source"`
-	Status                 RunStatus            `jsonapi:"attr,status"`
+	Source                 tfe.RunSource        `jsonapi:"attr,source"`
+	Status                 tfe.RunStatus        `jsonapi:"attr,status"`
 	StatusTimestamps       *RunStatusTimestamps `jsonapi:"attr,status-timestamps"`
 	TargetAddrs            []string             `jsonapi:"attr,target-addrs,omitempty"`
 
@@ -152,146 +163,4 @@ type RunCreateOptions struct {
 	// (destroys and then re-creates) the objects specified by the given
 	// resource addresses.
 	ReplaceAddrs []string `jsonapi:"attr,replace-addrs,omitempty"`
-}
-
-func (o RunCreateOptions) valid() error {
-	if o.Workspace == nil {
-		return errors.New("workspace is required")
-	}
-	return nil
-}
-
-// Create a new run with the given options.
-func (s *runs) Create(ctx context.Context, options RunCreateOptions) (*Run, error) {
-	if err := options.valid(); err != nil {
-		return nil, err
-	}
-
-	req, err := s.client.newRequest("POST", "runs", &options)
-	if err != nil {
-		return nil, err
-	}
-
-	r := &Run{}
-	err = s.client.do(ctx, req, r)
-	if err != nil {
-		return nil, err
-	}
-
-	return r, nil
-}
-
-// Read a run by its ID.
-func (s *runs) Read(ctx context.Context, runID string) (*Run, error) {
-	return s.ReadWithOptions(ctx, runID, nil)
-}
-
-// RunReadOptions represents the options for reading a run.
-type RunReadOptions struct {
-	Include string `url:"include"`
-}
-
-// Read a run by its ID with the given options.
-func (s *runs) ReadWithOptions(ctx context.Context, runID string, options *RunReadOptions) (*Run, error) {
-	if !validStringID(&runID) {
-		return nil, ErrInvalidRunID
-	}
-
-	u := fmt.Sprintf("runs/%s", url.QueryEscape(runID))
-	req, err := s.client.newRequest("GET", u, options)
-	if err != nil {
-		return nil, err
-	}
-
-	r := &Run{}
-	err = s.client.do(ctx, req, r)
-	if err != nil {
-		return nil, err
-	}
-
-	return r, nil
-}
-
-// RunApplyOptions represents the options for applying a run.
-type RunApplyOptions struct {
-	// An optional comment about the run.
-	Comment *string `jsonapi:"attr,comment,omitempty"`
-}
-
-// Apply a run by its ID.
-func (s *runs) Apply(ctx context.Context, runID string, options RunApplyOptions) error {
-	if !validStringID(&runID) {
-		return ErrInvalidRunID
-	}
-
-	u := fmt.Sprintf("runs/%s/actions/apply", url.QueryEscape(runID))
-	req, err := s.client.newRequest("POST", u, &options)
-	if err != nil {
-		return err
-	}
-
-	return s.client.do(ctx, req, nil)
-}
-
-// RunCancelOptions represents the options for canceling a run.
-type RunCancelOptions struct {
-	// An optional explanation for why the run was canceled.
-	Comment *string `jsonapi:"attr,comment,omitempty"`
-}
-
-// Cancel a run by its ID.
-func (s *runs) Cancel(ctx context.Context, runID string, options RunCancelOptions) error {
-	if !validStringID(&runID) {
-		return ErrInvalidRunID
-	}
-
-	u := fmt.Sprintf("runs/%s/actions/cancel", url.QueryEscape(runID))
-	req, err := s.client.newRequest("POST", u, &options)
-	if err != nil {
-		return err
-	}
-
-	return s.client.do(ctx, req, nil)
-}
-
-// RunForceCancelOptions represents the options for force-canceling a run.
-type RunForceCancelOptions struct {
-	// An optional comment explaining the reason for the force-cancel.
-	Comment *string `jsonapi:"attr,comment,omitempty"`
-}
-
-// ForceCancel is used to forcefully cancel a run by its ID.
-func (s *runs) ForceCancel(ctx context.Context, runID string, options RunForceCancelOptions) error {
-	if !validStringID(&runID) {
-		return ErrInvalidRunID
-	}
-
-	u := fmt.Sprintf("runs/%s/actions/force-cancel", url.QueryEscape(runID))
-	req, err := s.client.newRequest("POST", u, &options)
-	if err != nil {
-		return err
-	}
-
-	return s.client.do(ctx, req, nil)
-}
-
-// RunDiscardOptions represents the options for discarding a run.
-type RunDiscardOptions struct {
-	// An optional explanation for why the run was discarded.
-	Comment *string `jsonapi:"attr,comment,omitempty"`
-}
-
-// Discard a run by its ID.
-func (s *runs) Discard(ctx context.Context, runID string, options RunDiscardOptions) error {
-	if !validStringID(&runID) {
-		return ErrInvalidRunID
-	}
-
-	u := fmt.Sprintf("runs/%s/actions/discard", url.QueryEscape(runID))
-	req, err := s.client.newRequest("POST", u, &options)
-	if err != nil {
-		return err
-	}
-
-	return s.client.do(ctx, req, nil)
 }

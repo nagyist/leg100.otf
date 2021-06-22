@@ -41,6 +41,7 @@ type Server struct {
 	WorkspaceService            ots.WorkspaceService
 	StateVersionService         ots.StateVersionService
 	ConfigurationVersionService ots.ConfigurationVersionService
+	RunService                  ots.RunService
 }
 
 // NewServer is the contructor for Server
@@ -104,6 +105,15 @@ func NewRouter(server *Server) *negroni.Negroni {
 	sub.HandleFunc("/workspaces/{workspace_id}/configuration-versions", server.CreateConfigurationVersion).Methods("POST")
 	sub.HandleFunc("/configuration-versions/{id}", server.GetConfigurationVersion).Methods("GET")
 	sub.HandleFunc("/workspaces/{workspace_id}/configuration-versions", server.ListConfigurationVersions).Methods("GET")
+
+	// Run routes
+	sub.HandleFunc("/runs", server.CreateRun).Methods("POST")
+	sub.HandleFunc("/runs/{id}/actions/apply", server.ApplyRun).Methods("POST")
+	sub.HandleFunc("/workspaces/{workspace_id}/runs", server.ListRuns).Methods("GET")
+	sub.HandleFunc("/runs/{id}", server.GetRun).Methods("GET")
+	sub.HandleFunc("/runs/{id}/actions/discard", server.DiscardRun).Methods("POST")
+	sub.HandleFunc("/runs/{id}/actions/cancel", server.CancelRun).Methods("POST")
+	sub.HandleFunc("/runs/{id}/actions/force-cancel", server.ForceCancelRun).Methods("POST")
 
 	// Add default set of negroni middleware to routes: (i) Logging (ii)
 	// Recovery (iii) Static File serving (we don't use this one...)
