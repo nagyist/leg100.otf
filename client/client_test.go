@@ -1,9 +1,9 @@
-package main
+package client
 
 import (
 	"testing"
 
-	"github.com/hashicorp/go-tfe"
+	"github.com/leg100/go-tfe"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -31,7 +31,7 @@ func TestClientSanitizeAddress(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			cfg := clientConfig{
+			cfg := config{
 				Config: tfe.Config{
 					Address: tt.address,
 				},

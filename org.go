@@ -3,10 +3,9 @@ package ots
 import (
 	"errors"
 	"fmt"
-	"time"
 
 	"github.com/google/jsonapi"
-	tfe "github.com/hashicorp/go-tfe"
+	tfe "github.com/leg100/go-tfe"
 )
 
 const (
@@ -15,24 +14,6 @@ const (
 	DefaultCollaboratorAuthPolicy = "password"
 	DefaultCostEstimationEnabled  = true
 )
-
-// Organization represents a Terraform Enterprise organization.
-type Organization struct {
-	Name                   string                   `jsonapi:"primary,organizations"`
-	CollaboratorAuthPolicy tfe.AuthPolicyType       `jsonapi:"attr,collaborator-auth-policy"`
-	CostEstimationEnabled  bool                     `jsonapi:"attr,cost-estimation-enabled"`
-	CreatedAt              time.Time                `jsonapi:"attr,created-at,iso8601"`
-	Email                  string                   `jsonapi:"attr,email"`
-	EnterprisePlan         tfe.EnterprisePlanType   `jsonapi:"attr,enterprise-plan"`
-	ExternalID             string                   `jsonapi:"attr,external-id"`
-	OwnersTeamSAMLRoleID   string                   `jsonapi:"attr,owners-team-saml-role-id"`
-	Permissions            *OrganizationPermissions `jsonapi:"attr,permissions"`
-	SAMLEnabled            bool                     `jsonapi:"attr,saml-enabled"`
-	SessionRemember        int                      `jsonapi:"attr,session-remember"`
-	SessionTimeout         int                      `jsonapi:"attr,session-timeout"`
-	TrialExpiresAt         time.Time                `jsonapi:"attr,trial-expires-at,iso8601"`
-	TwoFactorConformant    bool                     `jsonapi:"attr,two-factor-conformant"`
-}
 
 type OrganizationList struct {
 	Items []*Organization

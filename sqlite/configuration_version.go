@@ -3,7 +3,7 @@ package sqlite
 import (
 	"fmt"
 
-	"github.com/hashicorp/go-tfe"
+	"github.com/leg100/go-tfe"
 	"github.com/leg100/ots"
 	"gorm.io/gorm"
 )
@@ -23,6 +23,9 @@ type ConfigurationVersionModel struct {
 	UploadURL     string
 
 	Configuration []byte
+
+	WorkspaceID uint
+	Workspace   WorkspaceModel
 }
 
 type ConfigurationVersionService struct {
@@ -54,9 +57,15 @@ func (ConfigurationVersionModel) TableName() string {
 	return "configuration_versions"
 }
 
-func (s ConfigurationVersionService) CreateConfigurationVersion(opts *tfe.ConfigurationVersionCreateOptions) (*ots.ConfigurationVersion, error) {
+func (s ConfigurationVersionService) CreateConfigurationVersion(workspaceID string, opts *tfe.ConfigurationVersionCreateOptions) (*ots.ConfigurationVersion, error) {
+	ws, err := getWorkspaceByID(s.DB, workspaceID)
+	if err != nil {
+		return nil, err
+	}
+
 	model := ConfigurationVersionModel{
 		ExternalID:    ots.NewConfigurationVersionID(),
+		WorkspaceID:   ws.ID,
 		AutoQueueRuns: ots.DefaultAutoQueueRuns,
 		Status:        string(tfe.ConfigurationPending),
 	}
@@ -122,10 +131,30 @@ func (s ConfigurationVersionService) UploadConfigurationVersion(id string, confi
 	return nil
 }
 
+func (s ConfigurationVersionService) DownloadConfigurationVersion(id string) ([]byte, error) {
+	var model ConfigurationVersionModel
+
+	if result := s.DB.Where("external_id = ?", id).First(&model); result.Error != nil {
+		return nil, result.Error
+	}
+
+	return model.Configuration, nil
+}
+
 func getConfigurationVersionByID(db *gorm.DB, id string) (*ConfigurationVersionModel, error) {
 	var model ConfigurationVersionModel
 
 	if result := db.Where("external_id = ?", id).First(&model); result.Error != nil {
+		return nil, result.Error
+	}
+
+	return &model, nil
+}
+
+func getMostRecentConfigurationVersion(db *gorm.DB, workspaceID uint) (*ConfigurationVersionModel, error) {
+	var model ConfigurationVersionModel
+
+	if result := db.Where("workspace_id = ?", workspaceID).Order("created_at desc").First(&model); result.Error != nil {
 		return nil, result.Error
 	}
 

@@ -66,6 +66,9 @@ func main() {
 	server.WorkspaceService = sqlite.NewWorkspaceService(db)
 	server.StateVersionService = sqlite.NewStateVersionService(db)
 	server.ConfigurationVersionService = sqlite.NewConfigurationVersionService(db)
+	server.RunService = sqlite.NewRunService(db)
+	server.PlanService = sqlite.NewPlanService(db)
+	server.ApplyService = sqlite.NewApplyService(db)
 
 	if err := server.Open(); err != nil {
 		server.Close()

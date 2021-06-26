@@ -1,28 +1,32 @@
 package ots
 
 import (
-	"context"
 	"fmt"
-	"net/url"
 	"time"
 
-	tfe "github.com/hashicorp/go-tfe"
+	"github.com/google/jsonapi"
+	tfe "github.com/leg100/go-tfe"
+)
+
+const (
+	DefaultRefresh = true
 )
 
 type RunService interface {
 	CreateRun(opts *tfe.RunCreateOptions) (*Run, error)
 	ApplyRun(id string, opts *tfe.RunApplyOptions) error
 	GetRun(id string) (*Run, error)
-	ListRuns(workspaceID string, opts ListOptions) (*RunList, error)
+	ListRuns(workspaceID string, opts RunListOptions) (*RunList, error)
 	DiscardRun(id string, opts *tfe.RunDiscardOptions) error
 	CancelRun(id string, opts *tfe.RunCancelOptions) error
 	ForceCancelRun(id string, opts *tfe.RunForceCancelOptions) error
+	GetQueuedRuns(opts RunListOptions) (*RunList, error)
 }
 
 // RunList represents a list of runs.
 type RunList struct {
-	*Pagination
 	Items []*Run
+	RunListOptions
 }
 
 // Run represents a Terraform Enterprise run.
@@ -47,42 +51,48 @@ type Run struct {
 	// Relations
 	Apply                *Apply                `jsonapi:"relation,apply"`
 	ConfigurationVersion *ConfigurationVersion `jsonapi:"relation,configuration-version"`
-	CostEstimate         *CostEstimate         `jsonapi:"relation,cost-estimate"`
-	CreatedBy            *User                 `jsonapi:"relation,created-by"`
 	Plan                 *Plan                 `jsonapi:"relation,plan"`
-	PolicyChecks         []*PolicyCheck        `jsonapi:"relation,policy-checks"`
 	Workspace            *Workspace            `jsonapi:"relation,workspace"`
+	//CostEstimate         *CostEstimate `jsonapi:"relation,cost-estimate"`
+	//CreatedBy            *User                 `jsonapi:"relation,created-by"`
+	//PolicyChecks         []*PolicyCheck `jsonapi:"relation,policy-checks"`
+}
+
+func (run *Run) JSONAPILinks() *jsonapi.Links {
+	return &jsonapi.Links{
+		"self": fmt.Sprintf("/api/v2/runs/%s", run.ID),
+	}
 }
 
 // RunActions represents the run actions.
 type RunActions struct {
-	IsCancelable      bool `jsonapi:"attr,is-cancelable"`
-	IsConfirmable     bool `jsonapi:"attr,is-confirmable"`
-	IsDiscardable     bool `jsonapi:"attr,is-discardable"`
-	IsForceCancelable bool `jsonapi:"attr,is-force-cancelable"`
+	IsCancelable      bool `json:"is-cancelable"`
+	IsConfirmable     bool `json:"is-confirmable"`
+	IsDiscardable     bool `json:"is-discardable"`
+	IsForceCancelable bool `json:"is-force-cancelable"`
 }
 
 // RunPermissions represents the run permissions.
 type RunPermissions struct {
-	CanApply        bool `jsonapi:"attr,can-apply"`
-	CanCancel       bool `jsonapi:"attr,can-cancel"`
-	CanDiscard      bool `jsonapi:"attr,can-discard"`
-	CanForceCancel  bool `jsonapi:"attr,can-force-cancel"`
-	CanForceExecute bool `jsonapi:"attr,can-force-execute"`
+	CanApply        bool `json:"can-apply"`
+	CanCancel       bool `json:"can-cancel"`
+	CanDiscard      bool `json:"can-discard"`
+	CanForceCancel  bool `json:"can-force-cancel"`
+	CanForceExecute bool `json:"can-force-execute"`
 }
 
 // RunStatusTimestamps holds the timestamps for individual run statuses.
 type RunStatusTimestamps struct {
-	ErroredAt            time.Time `jsonapi:"attr,errored-at,rfc3339"`
-	FinishedAt           time.Time `jsonapi:"attr,finished-at,rfc3339"`
-	QueuedAt             time.Time `jsonapi:"attr,queued-at,rfc3339"`
-	StartedAt            time.Time `jsonapi:"attr,started-at,rfc3339"`
-	ApplyingAt           time.Time `jsonapi:"attr,applying-at,rfc3339"`
-	AppliedAt            time.Time `jsonapi:"attr,applied-at,rfc3339"`
-	PlanningAt           time.Time `jsonapi:"attr,planning-at,rfc3339"`
-	PlannedAt            time.Time `jsonapi:"attr,planned-at,rfc3339"`
-	PlannedAndFinishedAt time.Time `jsonapi:"attr,planned-and-finished-at,rfc3339"`
-	PlanQueuabledAt      time.Time `jsonapi:"attr,plan-queueable-at,rfc3339"`
+	ErroredAt            time.Time `json:"errored-at,rfc3339"`
+	FinishedAt           time.Time `json:"finished-at,rfc3339"`
+	QueuedAt             time.Time `json:"queued-at,rfc3339"`
+	StartedAt            time.Time `json:"started-at,rfc3339"`
+	ApplyingAt           time.Time `json:"applying-at,rfc3339"`
+	AppliedAt            time.Time `json:"applied-at,rfc3339"`
+	PlanningAt           time.Time `json:"planning-at,rfc3339"`
+	PlannedAt            time.Time `json:"planned-at,rfc3339"`
+	PlannedAndFinishedAt time.Time `json:"planned-and-finished-at,rfc3339"`
+	PlanQueuabledAt      time.Time `json:"plan-queueable-at,rfc3339"`
 }
 
 // RunListOptions represents the options for listing runs.
@@ -92,27 +102,6 @@ type RunListOptions struct {
 	// A list of relations to include. See available resources:
 	// https://www.terraform.io/docs/cloud/api/run.html#available-related-resources
 	Include *string `url:"include"`
-}
-
-// List all the runs of the given workspace.
-func (s *runs) List(ctx context.Context, workspaceID string, options RunListOptions) (*RunList, error) {
-	if !validStringID(&workspaceID) {
-		return nil, ErrInvalidWorkspaceID
-	}
-
-	u := fmt.Sprintf("workspaces/%s/runs", url.QueryEscape(workspaceID))
-	req, err := s.client.newRequest("GET", u, &options)
-	if err != nil {
-		return nil, err
-	}
-
-	rl := &RunList{}
-	err = s.client.do(ctx, req, rl)
-	if err != nil {
-		return nil, err
-	}
-
-	return rl, nil
 }
 
 // RunCreateOptions represents the options for creating a new run.
@@ -163,4 +152,8 @@ type RunCreateOptions struct {
 	// (destroys and then re-creates) the objects specified by the given
 	// resource addresses.
 	ReplaceAddrs []string `jsonapi:"attr,replace-addrs,omitempty"`
+}
+
+func NewRunID() string {
+	return fmt.Sprintf("run-%s", GenerateRandomString(16))
 }

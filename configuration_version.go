@@ -4,7 +4,7 @@ import (
 	"fmt"
 
 	"github.com/google/jsonapi"
-	tfe "github.com/hashicorp/go-tfe"
+	tfe "github.com/leg100/go-tfe"
 )
 
 const (
@@ -33,10 +33,11 @@ func (cv *ConfigurationVersion) JSONAPILinks() *jsonapi.Links {
 }
 
 type ConfigurationVersionService interface {
-	CreateConfigurationVersion(opts *tfe.ConfigurationVersionCreateOptions) (*ConfigurationVersion, error)
+	CreateConfigurationVersion(workspaceID string, opts *tfe.ConfigurationVersionCreateOptions) (*ConfigurationVersion, error)
 	GetConfigurationVersion(id string) (*ConfigurationVersion, error)
 	ListConfigurationVersions(opts ConfigurationVersionListOptions) (*ConfigurationVersionList, error)
 	UploadConfigurationVersion(id string, payload []byte) error
+	DownloadConfigurationVersion(id string) ([]byte, error)
 }
 
 func NewConfigurationVersionID() string {

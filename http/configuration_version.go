@@ -6,7 +6,7 @@ import (
 	"net/http"
 
 	"github.com/gorilla/mux"
-	"github.com/hashicorp/go-tfe"
+	"github.com/leg100/go-tfe"
 	"github.com/leg100/ots"
 )
 
@@ -31,8 +31,10 @@ func (h *Server) GetConfigurationVersion(w http.ResponseWriter, r *http.Request)
 }
 
 func (h *Server) CreateConfigurationVersion(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+
 	CreateObject(w, r, &tfe.ConfigurationVersionCreateOptions{}, func(opts interface{}) (interface{}, error) {
-		return h.ConfigurationVersionService.CreateConfigurationVersion(opts.(*tfe.ConfigurationVersionCreateOptions))
+		return h.ConfigurationVersionService.CreateConfigurationVersion(vars["workspace_id"], opts.(*tfe.ConfigurationVersionCreateOptions))
 	})
 }
 
@@ -49,4 +51,20 @@ func (h *Server) UploadConfigurationVersion(w http.ResponseWriter, r *http.Reque
 		ErrNotFound(w)
 		return
 	}
+}
+
+func (h *Server) DownloadConfigurationVersion(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+
+	cv, err := h.ConfigurationVersionService.DownloadConfigurationVersion(vars["id"])
+	if err != nil {
+		ErrNotFound(w)
+		return
+	}
+
+	if _, err := w.Write(cv); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
 }
