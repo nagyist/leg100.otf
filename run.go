@@ -53,7 +53,9 @@ type Run struct {
 
 	// Relations
 	Plan                 *Plan
+	PlanJob              *Job
 	Apply                *Apply
+	ApplyJob             *Job
 	Workspace            *Workspace
 	ConfigurationVersion *ConfigurationVersion
 }
@@ -77,10 +79,6 @@ type RunService interface {
 	UpdateStatus(id string, status tfe.RunStatus) (*Run, error)
 	UpdatePlanStatus(id string, status tfe.PlanStatus) (*Run, error)
 	UpdateApplyStatus(id string, status tfe.ApplyStatus) (*Run, error)
-	GetPlanLogs(id string, opts PlanLogOptions) ([]byte, error)
-	UploadPlanLogs(id string, logs []byte) error
-	GetApplyLogs(id string, opts ApplyLogOptions) ([]byte, error)
-	UploadApplyLogs(id string, logs []byte) error
 	FinishPlan(id string, opts PlanFinishOptions) (*Run, error)
 	FinishApply(id string, opts ApplyFinishOptions) (*Run, error)
 	GetPlanJSON(id string) ([]byte, error)

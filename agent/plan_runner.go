@@ -11,24 +11,24 @@ type NewPlanRunnerFn func(
 	ots.ConfigurationVersionService,
 	ots.StateVersionService,
 	ots.RunService,
-	logr.Logger) *ots.Runner
+	logr.Logger) *ots.MultiStep
 
 func NewPlanRunner(run *ots.Run,
 	cvs ots.ConfigurationVersionService,
 	svs ots.StateVersionService,
 	rs ots.RunService,
-	log logr.Logger) *ots.Runner {
+	log logr.Logger) *ots.MultiStep {
 
-	return ots.NewRunner(
+	return ots.NewMultiStep(
 		[]ots.Step{
-			DownloadConfigStep(run, cvs),
-			DeleteBackendStep,
-			DownloadStateStep(run, svs, log),
-			UpdatePlanStatusStep(run, rs, tfe.PlanRunning),
-			InitStep,
-			PlanStep,
-			JSONPlanStep,
-			FinishPlanStep(run, rs, log),
+			NewDownloadConfigStep(run, cvs),
+			NewDeleteBackendStep,
+			NewDownloadStateStep(run, svs, log),
+			NewUpdatePlanStatusStep(run, rs, tfe.PlanRunning),
+			NewInitStep,
+			NewPlanStep,
+			NewJSONPlanStep,
+			NewFinishPlanStep(run, rs, log),
 		},
 	)
 }

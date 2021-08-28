@@ -10,6 +10,9 @@ const (
 	RunCanceled         EventType = "run_canceled"
 	PlanQueued          EventType = "plan_queued"
 	ApplyQueued         EventType = "apply_queued"
+	JobCreated          EventType = "job_created"
+	JobStartedEvent     EventType = "job_started"
+	JobCompletedEvent   EventType = "job_completed"
 )
 
 type EventType string

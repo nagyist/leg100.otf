@@ -11,22 +11,22 @@ type NewApplyRunnerFn func(
 	ots.ConfigurationVersionService,
 	ots.StateVersionService,
 	ots.RunService,
-	logr.Logger) *ots.Runner
+	logr.Logger) *ots.MultiStep
 
 func NewApplyRunner(run *ots.Run,
 	cvs ots.ConfigurationVersionService,
 	svs ots.StateVersionService,
 	rs ots.RunService,
-	log logr.Logger) *ots.Runner {
+	log logr.Logger) *ots.MultiStep {
 
-	return ots.NewRunner(
+	return ots.NewMultiStep(
 		[]ots.Step{
-			DownloadConfigStep(run, cvs),
-			DeleteBackendStep,
+			NewDownloadConfigStep(run, cvs),
+			NewDeleteBackendStep,
 			DownloadPlanFileStep(run, rs),
-			DownloadStateStep(run, svs, log),
+			NewDownloadStateStep(run, svs, log),
 			UpdateApplyStatusStep(run, rs, tfe.ApplyRunning),
-			InitStep,
+			NewInitStep,
 			ApplyStep,
 			UploadStateStep(run, svs),
 			FinishApplyStep(run, rs, log),

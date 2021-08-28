@@ -42,7 +42,7 @@ func (q *WorkspaceQueue) Add(run *Run) error {
 		return nil
 	}
 
-	// Other add run to pending queue
+	// Otherwise add run to pending queue
 	q.Pending = append(q.Pending, run)
 
 	return nil

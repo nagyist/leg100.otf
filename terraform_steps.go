@@ -1,4 +1,4 @@
-package agent
+package ots
 
 import (
 	"bytes"
@@ -12,7 +12,6 @@ import (
 
 	"github.com/go-logr/logr"
 	"github.com/leg100/go-tfe"
-	"github.com/leg100/ots"
 )
 
 const (
@@ -23,17 +22,17 @@ const (
 )
 
 var (
-	DeleteBackendStep = ots.NewFuncStep(deleteBackendConfigFromDirectory)
-	InitStep          = ots.NewCommandStep("terraform", "init", "-no-color")
-	PlanStep          = ots.NewCommandStep("terraform", "plan", "-no-color", fmt.Sprintf("-out=%s", PlanFilename))
-	JSONPlanStep      = ots.NewCommandStep("sh", "-c", fmt.Sprintf("terraform show -json %s > %s", PlanFilename, JSONPlanFilename))
-	ApplyStep         = ots.NewCommandStep("sh", "-c", fmt.Sprintf("terraform apply -no-color %s | tee %s", PlanFilename, ApplyOutputFilename))
+	NewDeleteBackendStep = NewFuncStep(deleteBackendConfigFromDirectory)
+	NewInitStep          = NewCommandStep("terraform", "init", "-no-color")
+	NewPlanStep          = NewCommandStep("terraform", "plan", "-no-color", fmt.Sprintf("-out=%s", PlanFilename))
+	NewJSONPlanStep      = NewCommandStep("sh", "-c", fmt.Sprintf("terraform show -json %s > %s", PlanFilename, JSONPlanFilename))
+	ApplyStep            = NewCommandStep("sh", "-c", fmt.Sprintf("terraform apply -no-color %s | tee %s", PlanFilename, ApplyOutputFilename))
 )
 
-func DownloadConfigStep(run *ots.Run, cvs ots.ConfigurationVersionService) *ots.FuncStep {
-	return ots.NewFuncStep(func(ctx context.Context, path string) error {
+func NewDownloadConfigStep(run *Run) *FuncStep {
+	return NewFuncStep(func(ctx context.Context, path string, svc StepService) error {
 		// Download config
-		cv, err := cvs.Download(run.ConfigurationVersion.ID)
+		cv, err := svc.DownloadConfig(run.ConfigurationVersion.ID)
 		if err != nil {
 			return fmt.Errorf("unable to download config: %w", err)
 		}
@@ -47,22 +46,22 @@ func DownloadConfigStep(run *ots.Run, cvs ots.ConfigurationVersionService) *ots.
 	})
 }
 
-func UpdatePlanStatusStep(run *ots.Run, rs ots.RunService, status tfe.PlanStatus) *ots.FuncStep {
-	return ots.NewFuncStep(func(ctx context.Context, path string) error {
-		_, err := rs.UpdatePlanStatus(run.ID, tfe.PlanRunning)
+func NewUpdatePlanStatusStep(run *Run, status tfe.PlanStatus) *FuncStep {
+	return NewFuncStep(func(ctx context.Context, path string, svc StepService) error {
+		_, err := svc.UpdatePlanStatus(run.ID, tfe.PlanRunning)
 		return err
 	})
 }
 
-func UpdateApplyStatusStep(run *ots.Run, rs ots.RunService, status tfe.ApplyStatus) *ots.FuncStep {
-	return ots.NewFuncStep(func(ctx context.Context, path string) error {
-		_, err := rs.UpdateApplyStatus(run.ID, tfe.ApplyRunning)
+func UpdateApplyStatusStep(run *Run, status tfe.ApplyStatus) *FuncStep {
+	return NewFuncStep(func(ctx context.Context, path string, svc StepService) error {
+		_, err := svc.UpdateApplyStatus(run.ID, tfe.ApplyRunning)
 		return err
 	})
 }
 
-func FinishPlanStep(run *ots.Run, rs ots.RunService, logger logr.Logger) *ots.FuncStep {
-	return ots.NewFuncStep(func(ctx context.Context, path string) error {
+func NewFinishPlanStep(run *Run, rs RunService, logger logr.Logger) *FuncStep {
+	return NewFuncStep(func(ctx context.Context, path string, svc StepService) error {
 		file, err := os.ReadFile(filepath.Join(path, PlanFilename))
 		if err != nil {
 			return err
@@ -72,7 +71,7 @@ func FinishPlanStep(run *ots.Run, rs ots.RunService, logger logr.Logger) *ots.Fu
 			return err
 		}
 
-		planFile := ots.PlanFile{}
+		planFile := PlanFile{}
 		if err := json.Unmarshal(jsonFile, &planFile); err != nil {
 			return err
 		}
@@ -81,7 +80,7 @@ func FinishPlanStep(run *ots.Run, rs ots.RunService, logger logr.Logger) *ots.Fu
 		adds, updates, deletes := planFile.Changes()
 
 		// Update status
-		_, err = rs.FinishPlan(run.ID, ots.PlanFinishOptions{
+		_, err = rs.FinishPlan(run.ID, PlanFinishOptions{
 			ResourceAdditions:    adds,
 			ResourceChanges:      updates,
 			ResourceDestructions: deletes,
@@ -102,8 +101,8 @@ func FinishPlanStep(run *ots.Run, rs ots.RunService, logger logr.Logger) *ots.Fu
 	})
 }
 
-func FinishApplyStep(run *ots.Run, rs ots.RunService, logger logr.Logger) *ots.FuncStep {
-	return ots.NewFuncStep(func(ctx context.Context, path string) error {
+func FinishApplyStep(run *Run, rs RunService, logger logr.Logger) *FuncStep {
+	return NewFuncStep(func(ctx context.Context, path string, svc StepService) error {
 		out, err := os.ReadFile(filepath.Join(path, ApplyOutputFilename))
 		if err != nil {
 			return err
@@ -116,7 +115,7 @@ func FinishApplyStep(run *ots.Run, rs ots.RunService, logger logr.Logger) *ots.F
 		}
 
 		// Update status
-		_, err = rs.FinishApply(run.ID, ots.ApplyFinishOptions{
+		_, err = rs.FinishApply(run.ID, ApplyFinishOptions{
 			ResourceAdditions:    info.adds,
 			ResourceChanges:      info.changes,
 			ResourceDestructions: info.deletions,
@@ -134,18 +133,18 @@ func FinishApplyStep(run *ots.Run, rs ots.RunService, logger logr.Logger) *ots.F
 	})
 }
 
-// DownloadStateStep downloads current state to disk. If there is no state yet
+// NewDownloadStateStep downloads current state to disk. If there is no state yet
 // nothing will be downloaded and no error will be reported.
-func DownloadStateStep(run *ots.Run, svs ots.StateVersionService, logger logr.Logger) *ots.FuncStep {
-	return ots.NewFuncStep(func(ctx context.Context, path string) error {
-		state, err := svs.Current(run.Workspace.ID)
-		if ots.IsNotFound(err) {
+func NewDownloadStateStep(run *Run) *FuncStep {
+	return NewFuncStep(func(ctx context.Context, path string, svc StepService) error {
+		state, err := svc.GetCurrentState(run.Workspace.ID)
+		if IsNotFound(err) {
 			return nil
 		} else if err != nil {
 			return err
 		}
 
-		statefile, err := svs.Download(state.ID)
+		statefile, err := svc.DownloadState(state.ID)
 		if err != nil {
 			return err
 		}
@@ -158,8 +157,8 @@ func DownloadStateStep(run *ots.Run, svs ots.StateVersionService, logger logr.Lo
 	})
 }
 
-func DownloadPlanFileStep(run *ots.Run, rs ots.RunService) *ots.FuncStep {
-	return ots.NewFuncStep(func(ctx context.Context, path string) error {
+func DownloadPlanFileStep(run *Run, rs RunService) *FuncStep {
+	return NewFuncStep(func(ctx context.Context, path string, svc StepService) error {
 		plan, err := rs.GetPlanFile(run.ID)
 		if err != nil {
 			return err
@@ -170,23 +169,23 @@ func DownloadPlanFileStep(run *ots.Run, rs ots.RunService) *ots.FuncStep {
 }
 
 // UploadStateStep reads, parses, and uploads state
-func UploadStateStep(run *ots.Run, svs ots.StateVersionService) *ots.FuncStep {
-	return ots.NewFuncStep(func(ctx context.Context, path string) error {
+func UploadStateStep(run *Run, svs StateVersionService) *FuncStep {
+	return NewFuncStep(func(ctx context.Context, path string, svc StepService) error {
 		stateFile, err := os.ReadFile(filepath.Join(path, LocalStateFilename))
 		if err != nil {
 			return err
 		}
 
-		state, err := ots.Parse(stateFile)
+		state, err := Parse(stateFile)
 		if err != nil {
 			return err
 		}
 
 		_, err = svs.Create(run.Workspace.ID, tfe.StateVersionCreateOptions{
-			State:   ots.String(base64.StdEncoding.EncodeToString(stateFile)),
-			MD5:     ots.String(fmt.Sprintf("%x", md5.Sum(stateFile))),
+			State:   String(base64.StdEncoding.EncodeToString(stateFile)),
+			MD5:     String(fmt.Sprintf("%x", md5.Sum(stateFile))),
 			Lineage: &state.Lineage,
-			Serial:  ots.Int64(state.Serial),
+			Serial:  Int64(state.Serial),
 		})
 		if err != nil {
 			return err

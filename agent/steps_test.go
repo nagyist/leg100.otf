@@ -25,7 +25,7 @@ func TestDownloadConfigStep(t *testing.T) {
 	}
 	path := t.TempDir()
 
-	err := DownloadConfigStep(run, cvs).Run(context.Background(), path, nil)
+	err := NewDownloadConfigStep(run, cvs).Run(context.Background(), path, nil)
 	require.NoError(t, err)
 
 	var got []string

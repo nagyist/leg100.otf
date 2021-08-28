@@ -12,18 +12,22 @@ var _ Spooler = (*SpoolerDaemon)(nil)
 
 // Spooler is a daemon that queues incoming run jobs
 type Spooler interface {
-	GetJob() <-chan *ots.Run
+	GetJob() <-chan *ots.Job
 	Start(context.Context)
 }
 
 // SpoolerDaemon queues jobs.
 type SpoolerDaemon struct {
 	// Queue of queued runs
-	queue chan *ots.Run
+	queue chan *ots.Job
 	// EventService allows subscribing to stream of events
 	ots.EventService
 	// Logger for logging various events
 	logr.Logger
+
+	cvs ots.ConfigurationVersionService
+	svs ots.StateVersionService
+	rs  ots.RunService
 }
 
 type RunLister interface {
@@ -42,22 +46,31 @@ var (
 )
 
 // NewSpooler is a constructor for a Spooler pre-populated with queued runs
-func NewSpooler(rl RunLister, es ots.EventService, logger logr.Logger) (*SpoolerDaemon, error) {
+func NewSpooler(
+	cvs ots.ConfigurationVersionService,
+	svs ots.StateVersionService,
+	rs ots.RunService,
+	es ots.EventService,
+	logger logr.Logger) (*SpoolerDaemon, error) {
+
 	// TODO: order runs by created_at date
-	runs, err := rl.List(ots.RunListOptions{Statuses: QueuedStatuses})
+	runs, err := rs.List(ots.RunListOptions{Statuses: QueuedStatuses})
 	if err != nil {
 		return nil, err
 	}
 
 	// Populate queue
-	queue := make(chan *ots.Run, SpoolerCapacity)
+	queue := make(chan *ots.Job, SpoolerCapacity)
 	for _, r := range runs.Items {
-		queue <- r
+		queue <- ots.NewJobFromRun(r, cvs, svs, rs)
 	}
 
 	return &SpoolerDaemon{
 		queue:        queue,
 		EventService: es,
+		cvs:          cvs,
+		svs:          svs,
+		rs:           rs,
 		Logger:       logger,
 	}, nil
 }
@@ -78,7 +91,7 @@ func (s *SpoolerDaemon) Start(ctx context.Context) {
 }
 
 // GetJob retrieves receive-only job queue
-func (s *SpoolerDaemon) GetJob() <-chan *ots.Run {
+func (s *SpoolerDaemon) GetJob() <-chan *ots.Job {
 	return s.queue
 }
 
@@ -89,7 +102,7 @@ func (s *SpoolerDaemon) handleEvent(ev ots.Event) {
 
 		switch ev.Type {
 		case ots.PlanQueued, ots.ApplyQueued:
-			s.queue <- obj
+			s.queue <- ots.NewJobFromRun(obj, s.cvs, s.svs, s.rs)
 		case ots.RunCanceled:
 			// TODO: forward event immediately to job supervisor
 		}

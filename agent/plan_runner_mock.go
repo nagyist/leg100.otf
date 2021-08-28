@@ -9,9 +9,9 @@ func mockNewPlanRunnerFn(run *ots.Run,
 	cvs ots.ConfigurationVersionService,
 	svs ots.StateVersionService,
 	rs ots.RunService,
-	log logr.Logger) *ots.Runner {
+	log logr.Logger) *ots.MultiStep {
 
-	return ots.NewRunner(
+	return ots.NewMultiStep(
 		[]ots.Step{},
 	)
 }
@@ -20,9 +20,9 @@ func mockNewPlanRunnerFnWithError(run *ots.Run,
 	cvs ots.ConfigurationVersionService,
 	svs ots.StateVersionService,
 	rs ots.RunService,
-	log logr.Logger) *ots.Runner {
+	log logr.Logger) *ots.MultiStep {
 
-	return ots.NewRunner(
+	return ots.NewMultiStep(
 		[]ots.Step{
 			ots.NewCommandStep("/bin/false"),
 		},

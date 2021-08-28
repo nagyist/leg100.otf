@@ -5,13 +5,29 @@ import (
 	"io"
 	"os"
 	"os/exec"
+
+	tfe "github.com/leg100/go-tfe"
 )
 
-type Step interface {
-	Cancel(bool)
-	Run(ctx context.Context, path string, out io.Writer) error
+type StepService interface {
+	DownloadConfig(id string) ([]byte, error)
+	UpdatePlanStatus(runID string, status tfe.PlanStatus) (*Run, error)
+	UpdateApplyStatus(runID string, status tfe.ApplyStatus) (*Run, error)
+	GetCurrentState(workspaceID string) (*StateVersion, error)
+	DownloadState(id string) ([]byte, error)
 }
 
+// Step is a cancelable task that forms part of a larger task (see MultiStep).
+type Step interface {
+	// Cancel cancels the task started by run. Force toggles whether the task is
+	// canceled gracefully or not.
+	Cancel(force bool)
+	// Run invokes the task. Path can be used to share artefacts with other
+	// steps. Informational output is expected to be written to out.
+	Run(ctx context.Context, path string, out io.Writer, svc StepService) error
+}
+
+// CommandStep is a cancelable executable CLI task.
 type CommandStep struct {
 	cmd  string
 	args []string
@@ -37,7 +53,7 @@ func (s *CommandStep) Cancel(force bool) {
 	}
 }
 
-func (s *CommandStep) Run(ctx context.Context, path string, out io.Writer) error {
+func (s *CommandStep) Run(ctx context.Context, path string, out io.Writer, svc StepService) error {
 	cmd := exec.Command(s.cmd, s.args...)
 	cmd.Dir = path
 	cmd.Stdout = out
@@ -48,12 +64,13 @@ func (s *CommandStep) Run(ctx context.Context, path string, out io.Writer) error
 	return cmd.Run()
 }
 
+// FuncStep is a cancelable go func task
 type FuncStep struct {
 	cancel context.CancelFunc
-	fn     func(context.Context, string) error
+	fn     func(context.Context, string, StepService) error
 }
 
-func NewFuncStep(fn func(context.Context, string) error) *FuncStep {
+func NewFuncStep(fn func(context.Context, string, StepService) error) *FuncStep {
 	return &FuncStep{
 		fn: fn,
 	}
@@ -70,7 +87,7 @@ func (s *FuncStep) Cancel(force bool) {
 }
 
 // Run invokes the func, setting the working dir to the given path
-func (s *FuncStep) Run(ctx context.Context, path string, out io.Writer) error {
+func (s *FuncStep) Run(ctx context.Context, path string, out io.Writer, svc StepService) error {
 	ctx, s.cancel = context.WithCancel(ctx)
-	return s.fn(ctx, path)
+	return s.fn(ctx, path, svc)
 }
