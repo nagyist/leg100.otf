@@ -88,7 +88,7 @@ func (s RunService) Discard(id string, opts *tfe.RunDiscardOptions) error {
 // Cancel enqueues a cancel request to cancel a currently queued or active plan
 // or apply.
 func (s RunService) Cancel(id string, opts *tfe.RunCancelOptions) error {
-	_, err := s.db.Update(id, func(run *ots.Run) error {
+	run, err := s.db.Update(id, func(run *ots.Run) error {
 		if err := run.IssueCancel(); err != nil {
 			return err
 		}
@@ -102,6 +102,12 @@ func (s RunService) Cancel(id string, opts *tfe.RunCancelOptions) error {
 
 		return nil
 	})
+
+	// Cancel job if there is one running
+	s.js.CancelJobByRunID(run.ID)
+
+	s.es.Publish(ots.Event{Type: ots.RunCanceled, Payload: run})
+
 	return err
 }
 
@@ -179,28 +185,33 @@ func (s RunService) UpdateApplyStatus(id string, status tfe.ApplyStatus) (*ots.R
 	return run, nil
 }
 
-func (s RunService) FinishPlan(id string, opts ots.PlanFinishOptions) (*ots.Run, error) {
-	planFileBlobID, err := s.bs.Put(opts.Plan)
+// UploadPlan persists a run's plan file. The plan file is expected to have been
+// produced using `terraform plan`. If the plan file is JSON serialized then set
+// json to true; information will then also be parsed from the plan file and
+// persisted to the run's plan obj.
+func (s RunService) UploadPlan(id string, plan []byte, json bool) error {
+	blobID, err := s.bs.Put(plan)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	planJSONBlobID, err := s.bs.Put(opts.PlanJSON)
-	if err != nil {
-		return nil, err
-	}
-
-	run, err := s.db.Update(id, func(run *ots.Run) error {
-		run.FinishPlan(opts)
-		run.Plan.PlanFileBlobID = planFileBlobID
-		run.Plan.PlanJSONBlobID = planJSONBlobID
+	_, err = s.db.Update(id, func(run *ots.Run) error {
+		if json {
+			// Parse info from the plan file
+			if err := run.Plan.SetResourceUpdates(plan); err != nil {
+				return err
+			}
+			run.Plan.PlanJSONBlobID = blobID
+		} else {
+			run.Plan.PlanFileBlobID = blobID
+		}
 
 		return nil
 	})
 	if err != nil {
-		return nil, err
+		return err
 	}
-	return run, nil
+	return nil
 }
 
 func (s RunService) FinishApply(id string, opts ots.ApplyFinishOptions) (*ots.Run, error) {

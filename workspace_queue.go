@@ -48,7 +48,8 @@ func (q *WorkspaceQueue) Add(run *Run) error {
 	return nil
 }
 
-// Remove removes a run from the queue.
+// Remove removes a run from the queue and makes the first pending run the
+// active run.
 func (q *WorkspaceQueue) Remove(run *Run) error {
 	// Speculative runs are never added to the queue in the first place so they
 	// do not need to be removed
@@ -56,7 +57,6 @@ func (q *WorkspaceQueue) Remove(run *Run) error {
 		return nil
 	}
 
-	// Remove active run and make the first pending run the active run
 	if q.Active.ID == run.ID {
 		q.Active = nil
 		if len(q.Pending) > 0 {

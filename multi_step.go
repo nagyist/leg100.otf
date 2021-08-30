@@ -28,7 +28,7 @@ func (r *MultiStep) Cancel(force bool) {
 	}
 }
 
-func (r *MultiStep) Run(ctx context.Context, path string, out io.Writer, svc StepService) error {
+func (r *MultiStep) Run(ctx context.Context, path string, out io.Writer, job *Job, svc StepService) error {
 	for i, s := range r.steps {
 		if r.canceled {
 			return nil
@@ -36,7 +36,7 @@ func (r *MultiStep) Run(ctx context.Context, path string, out io.Writer, svc Ste
 
 		r.current = i
 
-		if err := s.Run(ctx, path, out, svc); err != nil {
+		if err := s.Run(ctx, path, out, job, svc); err != nil {
 			return err
 		}
 	}

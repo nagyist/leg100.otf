@@ -46,16 +46,14 @@ type Run struct {
 	PositionInQueue        int
 	Refresh                bool
 	RefreshOnly            bool
-	Status                 tfe.RunStatus
-	StatusTimestamps       *tfe.RunStatusTimestamps
 	ReplaceAddrs           []string
 	TargetAddrs            []string
 
+	RunState
+
 	// Relations
 	Plan                 *Plan
-	PlanJob              *Job
 	Apply                *Apply
-	ApplyJob             *Job
 	Workspace            *Workspace
 	ConfigurationVersion *ConfigurationVersion
 }
@@ -79,10 +77,10 @@ type RunService interface {
 	UpdateStatus(id string, status tfe.RunStatus) (*Run, error)
 	UpdatePlanStatus(id string, status tfe.PlanStatus) (*Run, error)
 	UpdateApplyStatus(id string, status tfe.ApplyStatus) (*Run, error)
-	FinishPlan(id string, opts PlanFinishOptions) (*Run, error)
 	FinishApply(id string, opts ApplyFinishOptions) (*Run, error)
 	GetPlanJSON(id string) ([]byte, error)
 	GetPlanFile(id string) ([]byte, error)
+	UploadPlan(id string, plan []byte, json bool) error
 }
 
 // RunStore implementations persist Run objects.
@@ -123,24 +121,6 @@ type RunListOptions struct {
 
 	// Filter by workspace ID
 	WorkspaceID *string
-}
-
-// FinishPlan updates the state of a run to reflect its plan having finished
-func (r *Run) FinishPlan(opts PlanFinishOptions) {
-	r.Plan.ResourceAdditions = opts.ResourceAdditions
-	r.Plan.ResourceChanges = opts.ResourceChanges
-	r.Plan.ResourceDestructions = opts.ResourceDestructions
-
-	r.UpdatePlanStatus(tfe.PlanFinished)
-}
-
-// FinishApply updates the state of a run to reflect its plan having finished
-func (r *Run) FinishApply(opts ApplyFinishOptions) {
-	r.Apply.ResourceAdditions = opts.ResourceAdditions
-	r.Apply.ResourceChanges = opts.ResourceChanges
-	r.Apply.ResourceDestructions = opts.ResourceDestructions
-
-	r.UpdateApplyStatus(tfe.ApplyFinished)
 }
 
 // UpdateStatusToPlanQueued updates a run's status to indicate its plan has been
@@ -319,6 +299,41 @@ func (r *Run) UpdateStatus(status tfe.RunStatus) error {
 
 func (r *Run) IsSpeculative() bool {
 	return r.ConfigurationVersion.Speculative
+}
+
+func (r *Run) ChangeState(state RunState) {
+	r.State = state
+}
+
+// JobCompleted is called when one of a run's jobs has completed
+func (r *Run) JobFinished(job *Job, opts JobFinishOptions) {
+	if opts.Status == JobErrored {
+		switch r.Status {
+		case tfe.RunPlanning:
+			r.Plan.Status = tfe.PlanErrored
+			r.Plan.StatusTimestamps.ErroredAt = TimeNow()
+		case tfe.RunApplying:
+			r.Apply.Status = tfe.ApplyErrored
+			r.Apply.StatusTimestamps.ErroredAt = TimeNow()
+		default:
+			panic(fmt.Errorf("run in invalid state: %s", r.Status))
+		}
+		r.Status = tfe.RunErrored
+		return
+	}
+
+	switch r.Status {
+	case tfe.RunPlanning:
+		r.Plan.Status = tfe.PlanFinished
+		r.Plan.StatusTimestamps.FinishedAt = TimeNow()
+	case tfe.RunApplying:
+		r.Apply.Status = tfe.ApplyErrored
+		r.Apply.StatusTimestamps.ErroredAt = TimeNow()
+	default:
+		panic(fmt.Errorf("run in invalid state: %s", r.Status))
+	}
+	r.Status = tfe.RunErrored
+	return
 }
 
 // UpdatePlanStatus updates the status of the plan. It'll also update the

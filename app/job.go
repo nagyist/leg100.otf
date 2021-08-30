@@ -23,7 +23,10 @@ func NewJobService(db ots.JobStore, es ots.EventService) *JobService {
 // Create constructs and persists a new job object to the db and sends a
 // notification a job has been created.
 func (s JobService) Create(run *ots.Run) (job *ots.Job, err error) {
-	job = ots.NewJobFromRun(run)
+	job, err = ots.NewJobFromRun(run)
+	if err != nil {
+		return nil, err
+	}
 
 	job, err = s.db.Create(job)
 	if err != nil {
@@ -42,12 +45,37 @@ func (s JobService) Start(id string, opts ots.JobStartOptions) error {
 	return err
 }
 
-func (s JobService) Finish(id string) error {
-	_, err := s.db.Update(id, func(job *ots.Job) error {
+func (s JobService) Finish(id string, opts ots.JobFinishOptions) error {
+	job, err := s.db.Update(id, func(job *ots.Job) error {
+		job.Status = opts.Status
+
+		switch opts.Status {
+		case ots.JobErrored:
+		case ots.JobCompleted:
+		}
+		job.Status = ots.JobCompleted
+		switch job.Run.Status {
+		case tfe.RunApplying:
+
+		return nil
+	})
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (s JobService) Cancel(runID string) error {
+	job, err := s.db.Update(id, func(job *ots.Job) error {
 		job.Status = ots.JobCompleted
 		return nil
 	})
-	return err
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (s JobService) UploadLogs(id string, out []byte) error {

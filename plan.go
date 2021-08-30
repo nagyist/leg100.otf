@@ -1,6 +1,9 @@
 package ots
 
 import (
+	"encoding/json"
+	"fmt"
+
 	tfe "github.com/leg100/go-tfe"
 	"gorm.io/gorm"
 )
@@ -64,4 +67,23 @@ func (p *Plan) HasChanges() bool {
 		return true
 	}
 	return false
+}
+
+// SetResourceUpdates populates the plan's resource updates info using
+// information from a completed (json formatted) plan file
+func (p *Plan) SetResourceUpdates(jsonFile []byte) error {
+	planFile := PlanFile{}
+
+	if err := json.Unmarshal(jsonFile, &planFile); err != nil {
+		return fmt.Errorf("unable to parse plan file: %w", err)
+	}
+
+	// Parse plan output
+	adds, updates, deletes := planFile.Changes()
+
+	p.ResourceAdditions = adds
+	p.ResourceChanges = updates
+	p.ResourceDestructions = deletes
+
+	return nil
 }

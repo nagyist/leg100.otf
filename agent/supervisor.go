@@ -64,7 +64,7 @@ func (s *Supervisor) handleJob(ctx context.Context, job *ots.Job) {
 		return
 	}
 
-	if err := s.JobService.Start(job.ID); err != nil {
+	if err := s.JobService.Start(job.ID, ots.JobStartOptions{AgentID: DefaultID}); err != nil {
 		s.Error(err, "unable to start job")
 		return
 	}
