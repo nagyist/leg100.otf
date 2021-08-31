@@ -46,10 +46,10 @@ type Run struct {
 	PositionInQueue        int
 	Refresh                bool
 	RefreshOnly            bool
+	Status                 tfe.RunStatus
+	StatusTimestamps       *tfe.RunStatusTimestamps
 	ReplaceAddrs           []string
 	TargetAddrs            []string
-
-	RunState
 
 	// Relations
 	Plan                 *Plan
