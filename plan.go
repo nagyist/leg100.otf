@@ -46,12 +46,6 @@ type PlanFinishOptions struct {
 	ResourceAdditions    int `jsonapi:"attr,resource-additions"`
 	ResourceChanges      int `jsonapi:"attr,resource-changes"`
 	ResourceDestructions int `jsonapi:"attr,resource-destructions"`
-
-	// The execution plan file
-	Plan []byte `jsonapi:"attr,plan"`
-
-	// The execution plan file in json format
-	PlanJSON []byte `jsonapi:"attr,plan-json"`
 }
 
 func newPlan() *Plan {
@@ -86,4 +80,24 @@ func (p *Plan) SetResourceUpdates(jsonFile []byte) error {
 	p.ResourceDestructions = deletes
 
 	return nil
+}
+
+func (p *Plan) UpdateStatus(status tfe.PlanStatus) {
+	p.Status = status
+	p.setTimestamp(status)
+}
+
+func (p *Plan) setTimestamp(status tfe.PlanStatus) {
+	switch status {
+	case tfe.PlanCanceled:
+		p.StatusTimestamps.CanceledAt = TimeNow()
+	case tfe.PlanErrored:
+		p.StatusTimestamps.ErroredAt = TimeNow()
+	case tfe.PlanFinished:
+		p.StatusTimestamps.FinishedAt = TimeNow()
+	case tfe.PlanQueued:
+		p.StatusTimestamps.QueuedAt = TimeNow()
+	case tfe.PlanRunning:
+		p.StatusTimestamps.StartedAt = TimeNow()
+	}
 }

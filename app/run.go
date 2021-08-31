@@ -59,7 +59,7 @@ func (s RunService) List(opts ots.RunListOptions) (*ots.RunList, error) {
 
 func (s RunService) Apply(id string, opts *tfe.RunApplyOptions) error {
 	run, err := s.db.Update(id, func(run *ots.Run) error {
-		run.UpdateApplyStatus(tfe.ApplyQueued)
+		run.UpdateStatus(tfe.RunApplyQueued)
 
 		return nil
 	})
@@ -88,19 +88,8 @@ func (s RunService) Discard(id string, opts *tfe.RunDiscardOptions) error {
 // Cancel enqueues a cancel request to cancel a currently queued or active plan
 // or apply.
 func (s RunService) Cancel(id string, opts *tfe.RunCancelOptions) error {
-	run, err := s.db.Update(id, func(run *ots.Run) error {
-		if err := run.IssueCancel(); err != nil {
-			return err
-		}
-
-		// Immediately mark pending/queued runs as cancelled
-		switch run.Status {
-		case tfe.RunPending, tfe.RunPlanQueued, tfe.RunApplyQueued:
-			run.Status = tfe.RunCanceled
-			run.StatusTimestamps.CanceledAt = ots.TimeNow()
-		}
-
-		return nil
+	_, err := s.db.Update(id, func(run *ots.Run) error {
+		return run.Cancel()
 	})
 
 	// Cancel job if there is one running
@@ -161,28 +150,25 @@ func (s RunService) UpdateStatus(id string, status tfe.RunStatus) (*ots.Run, err
 	})
 }
 
-func (s RunService) UpdatePlanStatus(id string, status tfe.PlanStatus) (*ots.Run, error) {
-	run, err := s.db.Update(id, func(run *ots.Run) error {
-		run.UpdatePlanStatus(status)
+// UploadPlan persists a run's plan file. The plan file is expected to have been
+// produced using `terraform plan`. If the plan file is JSON serialized then set
+// json to true.
+func (s RunService) UploadPlan(id string, plan []byte, json bool) error {
+	blobID, err := s.bs.Put(plan)
+	if err != nil {
+		return err
+	}
+
+	_, err = s.db.Update(id, func(run *ots.Run) error {
+		if json {
+			run.Plan.PlanJSONBlobID = blobID
+		} else {
+			run.Plan.PlanFileBlobID = blobID
+		}
 
 		return nil
 	})
-	if err != nil {
-		return nil, err
-	}
-	return run, nil
-}
-
-func (s RunService) UpdateApplyStatus(id string, status tfe.ApplyStatus) (*ots.Run, error) {
-	run, err := s.db.Update(id, func(run *ots.Run) error {
-		run.UpdateApplyStatus(status)
-
-		return nil
-	})
-	if err != nil {
-		return nil, err
-	}
-	return run, nil
+	return err
 }
 
 // UploadPlan persists a run's plan file. The plan file is expected to have been
@@ -211,7 +197,16 @@ func (s RunService) UploadPlan(id string, plan []byte, json bool) error {
 	if err != nil {
 		return err
 	}
+
 	return nil
+}
+
+func (s RunService) FinishPlan(id string, opts ots.PlanFinishOptions) (*ots.Run, error) {
+	return s.db.Update(id, func(run *ots.Run) error {
+		run.FinishPlan(opts)
+
+		return nil
+	})
 }
 
 func (s RunService) FinishApply(id string, opts ots.ApplyFinishOptions) (*ots.Run, error) {
