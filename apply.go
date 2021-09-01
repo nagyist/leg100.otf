@@ -18,11 +18,10 @@ type Apply struct {
 
 	gorm.Model
 
-	ResourceAdditions    int
-	ResourceChanges      int
-	ResourceDestructions int
-	Status               tfe.ApplyStatus
-	StatusTimestamps     *tfe.ApplyStatusTimestamps
+	ResourceSummary
+
+	Status           tfe.ApplyStatus
+	StatusTimestamps *tfe.ApplyStatusTimestamps
 
 	Logs []byte
 }

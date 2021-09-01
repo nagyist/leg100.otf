@@ -11,6 +11,7 @@ const (
 	JobStarted   JobStatus = "started"
 	JobCompleted JobStatus = "completed"
 	JobErrored   JobStatus = "errored"
+	JobCanceled  JobStatus = "canceled"
 )
 
 type ErrJobAlreadyStarted error
@@ -23,7 +24,7 @@ type Job struct {
 
 	// Operation is the particular terraform task the job is carrying out: a
 	// plan or an apply
-	Operation Operation
+	Operation Step
 
 	// Status is the current status of the job
 	Status JobStatus
@@ -31,26 +32,30 @@ type Job struct {
 	// AgentID is the ID of the agent handling the job
 	AgentID string
 
+	// RunID is the ID of the run the job belongs to.
+	RunID string
+
+	// WorkspaceID is the ID of the workspace the job belongs to.
+	WorkspaceID string
+
+	// ConfigurationVersionID is the ID of the configuration version pertaining
+	// to the job.
+	ConfigurationVersionID string
+
+	// StateVersionID is the ID of the state version pertaining to the job.
+	StateVersionID string
+
 	// Logs are the stdout/stderr log output
 	Logs []byte
-
-	// Relations
-	Run                  *Run
-	Workspace            *Workspace
-	ConfigurationVersion *ConfigurationVersion
 }
 
 type JobService interface {
-	Create(*Run) (*Job, error)
 	// Start is called by an agent when it starts the job. ErrJobAlreadyStarted
 	// should be returned if another agent has already started it.
 	Start(id string, opts JobStartOptions) error
 
 	// Finish is called to signal completion of the job
 	Finish(id string, opts JobFinishOptions) error
-
-	// Cancel cancels a job using its run ID
-	Cancel(runID string) error
 
 	UploadLogs(id string, out []byte) error
 }
@@ -85,11 +90,11 @@ type JobLogOptions struct {
 // NewJobFromRun constructs a job from a run.
 func NewJobFromRun(run *Run) (*Job, error) {
 	job := &Job{
-		ID:                   GenerateID("job"),
-		Status:               JobPending,
-		Run:                  run,
-		Workspace:            run.Workspace,
-		ConfigurationVersion: run.ConfigurationVersion,
+		ID:                     GenerateID("job"),
+		Status:                 JobPending,
+		RunID:                  run.ID,
+		WorkspaceID:            run.Workspace.ID,
+		ConfigurationVersionID: run.ConfigurationVersion.ID,
 	}
 
 	switch run.Status {
@@ -109,15 +114,13 @@ func NewErrJobAlreadyStarted(agentID string) ErrJobAlreadyStarted {
 }
 
 // Start updates the state of the job to indicate an agent has started it.
-func (j *Job) Start(agentID string) error {
+func (j *Job) Start(opts JobStartOptions) error {
 	if j.Status == JobStarted {
 		return NewErrJobAlreadyStarted(j.AgentID)
 	}
 
 	j.Status = JobStarted
-	j.AgentID = agentID
-
-	j.Operation.Start(j)
+	j.AgentID = opts.AgentID
 
 	return nil
 }
@@ -125,8 +128,6 @@ func (j *Job) Start(agentID string) error {
 // Finish updates the state of the job to indicate an agent has finished it.
 func (j *Job) Finish(opts JobFinishOptions) error {
 	j.Status = opts.Status
-
-	j.Operation.Finish(j)
 
 	return nil
 }

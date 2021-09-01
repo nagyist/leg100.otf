@@ -18,11 +18,10 @@ type Plan struct {
 
 	gorm.Model
 
-	ResourceAdditions    int
-	ResourceChanges      int
-	ResourceDestructions int
-	Status               tfe.PlanStatus
-	StatusTimestamps     *tfe.PlanStatusTimestamps
+	ResourceSummary
+
+	Status           tfe.PlanStatus
+	StatusTimestamps *tfe.PlanStatusTimestamps
 
 	// The blob ID of the execution plan file
 	PlanFileBlobID string

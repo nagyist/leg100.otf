@@ -52,8 +52,12 @@ type Run struct {
 	TargetAddrs            []string
 
 	// Relations
-	Plan                 *Plan
-	Apply                *Apply
+	Plan    *Plan
+	PlanJob *Job
+
+	Apply    *Apply
+	ApplyJob *Job
+
 	Workspace            *Workspace
 	ConfigurationVersion *ConfigurationVersion
 }
@@ -75,15 +79,23 @@ type RunService interface {
 	ForceCancel(id string, opts *tfe.RunForceCancelOptions) error
 	EnqueuePlan(id string) error
 	UpdateStatus(id string, status tfe.RunStatus) (*Run, error)
-	GetPlanLogs(id string, opts PlanLogOptions) ([]byte, error)
-	UploadPlanLogs(id string, logs []byte) error
-	GetApplyLogs(id string, opts ApplyLogOptions) ([]byte, error)
-	UploadApplyLogs(id string, logs []byte) error
-	FinishPlan(id string, opts PlanFinishOptions) (*Run, error)
-	FinishApply(id string, opts ApplyFinishOptions) (*Run, error)
 	GetPlanJSON(id string) ([]byte, error)
 	GetPlanFile(id string) ([]byte, error)
 	UploadPlan(runID string, plan []byte, json bool) error
+
+	UpdatePlanSummary(runID string, summary ResourceSummary) error
+	UpdateApplySummary(runID string, summary ResourceSummary) error
+
+	StartJob(jobID string, opts JobStartOptions) error
+	FinishJob(jobID string, opts JobFinishOptions) error
+}
+
+// ResourceSummary is a summary of resource updates resulting from a terraform
+// task, e.g. a plan or apply.
+type ResourceSummary struct {
+	ResourceAdditions    int
+	ResourceChanges      int
+	ResourceDestructions int
 }
 
 // RunStore implementations persist Run objects.
@@ -113,6 +125,9 @@ type RunGetOptions struct {
 
 	// Get run via plan ID
 	PlanID *string
+
+	// Get run via job ID
+	JobID *string
 }
 
 // RunListOptions are options for paginating and filtering a list of runs
@@ -126,22 +141,115 @@ type RunListOptions struct {
 	WorkspaceID *string
 }
 
-// FinishPlan updates the state of a run to reflect its plan having finished
-func (r *Run) FinishPlan(opts PlanFinishOptions) {
-	r.Plan.ResourceAdditions = opts.ResourceAdditions
-	r.Plan.ResourceChanges = opts.ResourceChanges
-	r.Plan.ResourceDestructions = opts.ResourceDestructions
+// EnqueuePlan enqueues a run's plan, returning a job for the plan.
+func (r *Run) EnqueuePlan() (*Job, error) {
+	r.UpdateStatus(tfe.RunPlanQueued)
 
-	r.UpdateStatus(tfe.RunPlanned)
+	job, err := NewJobFromRun(r)
+	if err != nil {
+		return nil, err
+	}
+	r.PlanJob = job
+
+	return job, nil
 }
 
-// FinishApply updates the state of a run to reflect its plan having finished
-func (r *Run) FinishApply(opts ApplyFinishOptions) {
-	r.Apply.ResourceAdditions = opts.ResourceAdditions
-	r.Apply.ResourceChanges = opts.ResourceChanges
-	r.Apply.ResourceDestructions = opts.ResourceDestructions
+// EnqueueApply enqueues a run's apply, returning a job for the apply.
+func (r *Run) EnqueueApply() (*Job, error) {
+	r.UpdateStatus(tfe.RunApplyQueued)
 
-	r.UpdateStatus(tfe.RunApplied)
+	job, err := NewJobFromRun(r)
+	if err != nil {
+		return nil, err
+	}
+	r.ApplyJob = job
+
+	return job, nil
+}
+
+// StartJob starts the given job for the run
+func (r *Run) StartJob(jobID string, opts JobStartOptions) error {
+	job := r.CurrentJob()
+	if job == nil {
+		return fmt.Errorf("run %s does not have a current job", r.ID)
+	}
+	if job.ID != jobID {
+		return fmt.Errorf("run's current job (%s) does not match job (%s) trying to start", job.ID, jobID)
+	}
+
+	switch r.Status {
+	case tfe.RunPlanQueued:
+		r.UpdateStatus(tfe.RunPlanning)
+	case tfe.RunApplyQueued:
+		r.UpdateStatus(tfe.RunApplying)
+	default:
+		return fmt.Errorf("attempted to start a job for a run with a non-queued status: %s", r.Status)
+	}
+
+	return job.Start(opts)
+}
+
+// FinishJob finishes the given job for the run, setting its status accordingly.
+// It'll also conditionally create a new job if necessary.
+func (r *Run) FinishJob(jobID string, opts JobFinishOptions) (*Job, error) {
+	job := r.CurrentJob()
+	if job == nil {
+		return nil, fmt.Errorf("run %s does not have a current job", r.ID)
+	}
+	if job.ID != jobID {
+		return nil, fmt.Errorf("run's current job (%s) does not match job (%s) trying to finish", job.ID, jobID)
+	}
+
+	if err := job.Finish(opts); err != nil {
+		return nil, err
+	}
+
+	// Failed job, proceed no further
+	if opts.Status == JobErrored {
+		r.UpdateStatus(tfe.RunErrored)
+		return nil, nil
+	}
+
+	// Finished Apply job, proceed no further
+	if r.Status == tfe.RunApplying {
+		r.UpdateStatus(tfe.RunApplied)
+		return nil, nil
+	}
+
+	// Run must be in planning stage otherwise something has gone wrong
+	if r.Status != tfe.RunPlanning {
+		return nil, fmt.Errorf("job finished but run has an unexpected status: %s", r.Status)
+	}
+
+	// Speculative plan, proceed no further
+	if r.ConfigurationVersion.Speculative {
+		r.UpdateStatus(tfe.RunPlannedAndFinished)
+		return nil, nil
+	}
+
+	r.UpdateStatus(tfe.RunPlanned)
+
+	if r.Workspace.AutoApply {
+		return r.EnqueueApply()
+	}
+
+	return nil, nil
+}
+
+// CurrentJob returns the currently active job for the run, or nil if no job is
+// currently active.
+func (r *Run) CurrentJob() *Job {
+	switch r.PlanJob.Status {
+	case JobPending, JobStarted:
+		return r.PlanJob
+	}
+
+	switch r.ApplyJob.Status {
+	case JobPending, JobStarted:
+		return r.ApplyJob
+	}
+
+	return nil
 }
 
 // Discard updates the state of a run to reflect it having been discarded.
@@ -155,11 +263,11 @@ func (r *Run) Discard() error {
 	return nil
 }
 
-// Cancel updates the state of a run to reflect a cancel request having
-// been issued.
-func (r *Run) Cancel() error {
+// Cancel cancels a run. If a job is currently active then it'll update its
+// status to canceled and return it.
+func (r *Run) Cancel() (*Job, error) {
 	if !r.IsCancelable() {
-		return ErrRunCancelNotAllowed
+		return nil, ErrRunCancelNotAllowed
 	}
 
 	// Run can be forcefully cancelled after a cool-off period of ten seconds
@@ -167,7 +275,14 @@ func (r *Run) Cancel() error {
 
 	r.UpdateStatus(tfe.RunCanceled)
 
-	return nil
+	job := r.CurrentJob()
+	if job == nil {
+		return nil, nil
+	}
+
+	job.Status = JobCanceled
+
+	return job, nil
 }
 
 // ForceCancel updates the state of a run to reflect it having been forcefully

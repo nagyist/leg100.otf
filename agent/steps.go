@@ -128,38 +128,6 @@ func FinishPlanStep(run *ots.Run, rs ots.RunService, logger logr.Logger) *ots.Fu
 	})
 }
 
-func FinishApplyStep(run *ots.Run, rs ots.RunService, logger logr.Logger) *ots.FuncStep {
-	return ots.NewFuncStep(func(ctx context.Context, path string) error {
-		out, err := os.ReadFile(filepath.Join(path, ApplyOutputFilename))
-		if err != nil {
-			return err
-		}
-
-		// Parse apply output
-		info, err := parseApplyOutput(string(out))
-		if err != nil {
-			return fmt.Errorf("unable to parse apply output: %w", err)
-		}
-
-		// Update status
-		_, err = rs.FinishApply(run.ID, ots.ApplyFinishOptions{
-			ResourceAdditions:    info.adds,
-			ResourceChanges:      info.changes,
-			ResourceDestructions: info.deletions,
-		})
-		if err != nil {
-			return fmt.Errorf("unable to finish apply: %w", err)
-		}
-
-		logger.Info("job completed", "run", run.ID,
-			"additions", info.adds,
-			"changes", info.changes,
-			"deletions", info.deletions)
-
-		return nil
-	})
-}
-
 // DownloadStateStep downloads current state to disk. If there is no state yet
 // nothing will be downloaded and no error will be reported.
 func DownloadStateStep(run *ots.Run, svs ots.StateVersionService, logger logr.Logger) *ots.FuncStep {

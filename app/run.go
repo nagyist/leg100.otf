@@ -11,17 +11,15 @@ type RunService struct {
 	db ots.RunStore
 	bs ots.BlobStore
 	es ots.EventService
-	js ots.JobService
 
 	*ots.RunFactory
 }
 
-func NewRunService(db ots.RunStore, wss ots.WorkspaceService, cvs ots.ConfigurationVersionService, bs ots.BlobStore, es ots.EventService, js ots.JobService) *RunService {
+func NewRunService(db ots.RunStore, wss ots.WorkspaceService, cvs ots.ConfigurationVersionService, bs ots.BlobStore, es ots.EventService) *RunService {
 	return &RunService{
 		bs: bs,
 		db: db,
 		es: es,
-		js: js,
 		RunFactory: &ots.RunFactory{
 			WorkspaceService:            wss,
 			ConfigurationVersionService: cvs,
@@ -85,17 +83,17 @@ func (s RunService) Discard(id string, opts *tfe.RunDiscardOptions) error {
 	return err
 }
 
-// Cancel enqueues a cancel request to cancel a currently queued or active plan
-// or apply.
+// Cancel cancels a run. Triggers a job canceled event if the run has an active
+// job.
 func (s RunService) Cancel(id string, opts *tfe.RunCancelOptions) error {
-	_, err := s.db.Update(id, func(run *ots.Run) error {
-		return run.Cancel()
+	var job *ots.Job
+
+	_, err := s.db.Update(id, func(run *ots.Run) (err error) {
+		job, err = run.Cancel()
+		return err
 	})
 
-	// Cancel job if there is one running
-	s.js.CancelJobByRunID(run.ID)
-
-	s.es.Publish(ots.Event{Type: ots.RunCanceled, Payload: run})
+	s.es.Publish(ots.Event{Type: ots.JobCanceledEvent, Payload: job})
 
 	return err
 }
@@ -118,28 +116,60 @@ func (s RunService) ForceCancel(id string, opts *tfe.RunForceCancelOptions) erro
 
 // EnqueuePlan enqueues a run's plan by creating a plan job
 func (s RunService) EnqueuePlan(id string) error {
-	run, err := s.db.Get(ots.RunGetOptions{ID: &id})
-	if err != nil {
-		return err
-	}
+	var job *ots.Job
 
-	job, err := s.js.Create(run)
-	if err != nil {
+	_, err := s.db.Update(id, func(run *ots.Run) (err error) {
+		job, err = run.EnqueuePlan()
 		return err
-	}
-
-	run, err = s.db.Update(id, func(run *ots.Run) error {
-		if err := run.UpdateStatus(tfe.RunPlanQueued); err != nil {
-			return err
-		}
-		run.PlanJob = job
-		return nil
 	})
 	if err != nil {
 		return err
 	}
 
-	s.es.Publish(ots.Event{Type: ots.PlanQueued, Payload: run})
+	s.es.Publish(ots.Event{Type: ots.JobCreated, Payload: job})
+
+	return err
+}
+
+// StartJob starts one of a run's jobs.
+func (s RunService) StartJob(jobID string, opts ots.JobStartOptions) error {
+	run, err := s.db.Get(ots.RunGetOptions{JobID: &jobID})
+	if err != nil {
+		return err
+	}
+
+	_, err = s.db.Update(run.ID, func(run *ots.Run) error {
+		return run.StartJob(jobID, opts)
+	})
+	if err != nil {
+		return err
+	}
+
+	return err
+}
+
+// FinishJob finishes one of a run's jobs.
+func (s RunService) FinishJob(jobID string, opts ots.JobFinishOptions) error {
+	run, err := s.db.Get(ots.RunGetOptions{JobID: &jobID})
+	if err != nil {
+		return err
+	}
+
+	// If finished job is a plan then a new apply job might be created (i.e. if
+	// AutoApply is enabled)
+	var applyJob *ots.Job
+
+	_, err = s.db.Update(run.ID, func(run *ots.Run) (err error) {
+		applyJob, err = run.FinishJob(jobID, opts)
+		return err
+	})
+	if err != nil {
+		return err
+	}
+
+	if applyJob != nil {
+		s.es.Publish(ots.Event{Type: ots.JobCreated, Payload: applyJob})
+	}
 
 	return err
 }
@@ -171,57 +201,24 @@ func (s RunService) UploadPlan(id string, plan []byte, json bool) error {
 	return err
 }
 
-// UploadPlan persists a run's plan file. The plan file is expected to have been
-// produced using `terraform plan`. If the plan file is JSON serialized then set
-// json to true; information will then also be parsed from the plan file and
-// persisted to the run's plan obj.
-func (s RunService) UploadPlan(id string, plan []byte, json bool) error {
-	blobID, err := s.bs.Put(plan)
-	if err != nil {
-		return err
-	}
-
-	_, err = s.db.Update(id, func(run *ots.Run) error {
-		if json {
-			// Parse info from the plan file
-			if err := run.Plan.SetResourceUpdates(plan); err != nil {
-				return err
-			}
-			run.Plan.PlanJSONBlobID = blobID
-		} else {
-			run.Plan.PlanFileBlobID = blobID
-		}
+// UpdatePlanSummary updates the resource summary for a run's plan.
+func (s RunService) UpdatePlanSummary(id string, summary ots.ResourceSummary) error {
+	_, err := s.db.Update(id, func(run *ots.Run) error {
+		run.Plan.ResourceSummary = summary
 
 		return nil
 	})
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return err
 }
 
-func (s RunService) FinishPlan(id string, opts ots.PlanFinishOptions) (*ots.Run, error) {
-	return s.db.Update(id, func(run *ots.Run) error {
-		run.FinishPlan(opts)
+// UpdateApplySummary updates the resource summary for a run's plan.
+func (s RunService) UpdateApplySummary(id string, summary ots.ResourceSummary) error {
+	_, err := s.db.Update(id, func(run *ots.Run) error {
+		run.Apply.ResourceSummary = summary
 
 		return nil
 	})
-}
-
-func (s RunService) FinishApply(id string, opts ots.ApplyFinishOptions) (*ots.Run, error) {
-	run, err := s.db.Update(id, func(run *ots.Run) error {
-		run.FinishApply(opts)
-
-		return nil
-	})
-	if err != nil {
-		return nil, err
-	}
-
-	s.es.Publish(ots.Event{Type: ots.RunCompleted, Payload: run})
-
-	return run, nil
+	return err
 }
 
 // GetPlanJSON returns the JSON formatted plan file for the run.

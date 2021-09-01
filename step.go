@@ -16,6 +16,8 @@ type StepService interface {
 	DownloadState(id string) ([]byte, error)
 	CreateStateVersion(workspaceID string, opts tfe.StateVersionCreateOptions) (*StateVersion, error)
 	UploadPlanFile(runID string, file []byte, json bool) error
+	UpdatePlanSummary(runID string, summary ResourceSummary) error
+	UpdateApplySummary(runID string, summary ResourceSummary) error
 }
 
 // Step is a cancelable task that forms part of a larger task (see MultiStep).

@@ -10,72 +10,22 @@ var _ ots.JobService = (*JobService)(nil)
 
 type JobService struct {
 	db ots.JobStore
-	es ots.EventService
+	rs ots.RunService
 }
 
-func NewJobService(db ots.JobStore, es ots.EventService) *JobService {
+func NewJobService(db ots.JobStore, rs ots.RunService) *JobService {
 	return &JobService{
 		db: db,
-		es: es,
+		rs: rs,
 	}
-}
-
-// Create constructs and persists a new job object to the db and sends a
-// notification a job has been created.
-func (s JobService) Create(run *ots.Run) (job *ots.Job, err error) {
-	job, err = ots.NewJobFromRun(run)
-	if err != nil {
-		return nil, err
-	}
-
-	job, err = s.db.Create(job)
-	if err != nil {
-		return nil, err
-	}
-
-	s.es.Publish(ots.Event{Type: ots.JobCreated, Payload: job})
-
-	return job, nil
 }
 
 func (s JobService) Start(id string, opts ots.JobStartOptions) error {
-	_, err := s.db.Update(id, func(job *ots.Job) error {
-		return job.Start(opts.AgentID)
-	})
-	return err
+	return s.rs.StartJob(id, opts)
 }
 
 func (s JobService) Finish(id string, opts ots.JobFinishOptions) error {
-	job, err := s.db.Update(id, func(job *ots.Job) error {
-		job.Status = opts.Status
-
-		switch opts.Status {
-		case ots.JobErrored:
-		case ots.JobCompleted:
-		}
-		job.Status = ots.JobCompleted
-		switch job.Run.Status {
-		case tfe.RunApplying:
-
-		return nil
-	})
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func (s JobService) Cancel(runID string) error {
-	job, err := s.db.Update(id, func(job *ots.Job) error {
-		job.Status = ots.JobCompleted
-		return nil
-	})
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return s.rs.FinishJob(id, opts)
 }
 
 func (s JobService) UploadLogs(id string, out []byte) error {
@@ -117,12 +67,7 @@ func (s JobService) GetLogs(id string, opts ots.JobLogOptions) ([]byte, error) {
 	return resp, nil
 }
 
-// Get retrieves a job obj with the given ID from the db.
-func (s JobService) Get(id string) (*ots.Job, error) {
-	return s.db.Get(id)
-}
-
-// List retrieves multiple job objs. Use opts to filter and paginate the list.
+// List retrieves multiple jobs.
 func (s JobService) List() ([]*ots.Job, error) {
 	return s.db.List()
 }
