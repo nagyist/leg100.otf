@@ -5,19 +5,18 @@ import (
 	"testing"
 
 	"github.com/go-logr/logr"
-	"github.com/leg100/go-tfe"
 	"github.com/leg100/ots"
 	"github.com/leg100/ots/mock"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
-type mockRunLister struct {
-	runs []*ots.Run
+type mockJobLister struct {
+	jobs []*ots.Job
 }
 
-func (l *mockRunLister) List(opts ots.RunListOptions) (*ots.RunList, error) {
-	return &ots.RunList{Items: l.runs}, nil
+func (l *mockJobLister) ListJobs(opts ots.JobListOptions) ([]*ots.Job, error) {
+	return l.jobs, nil
 }
 
 type mockSubscription struct {
@@ -30,16 +29,10 @@ func (s *mockSubscription) Close() error { return nil }
 
 // TestSpooler_New tests the spooler constructor
 func TestSpooler_New(t *testing.T) {
-	want := &ots.Run{ID: "run-123", Status: tfe.RunPlanQueued}
+	want := &ots.Job{ID: "run-123", Status: ots.JobPending}
 
 	spooler, err := NewSpooler(
-		nil,
-		nil,
-		&mock.RunService{
-			ListFn: func(opts ots.RunListOptions) (*ots.RunList, error) {
-				return &ots.RunList{Items: []*ots.Run{want}}, nil
-			},
-		},
+		&mockJobLister{jobs: []*ots.Job{want}},
 		&mock.EventService{},
 		logr.Discard(),
 	)
@@ -74,7 +67,7 @@ func TestSpooler_Start(t *testing.T) {
 
 // TestSpooler_GetJob tests retrieving a job from the spooler
 func TestSpooler_GetJob(t *testing.T) {
-	want := &ots.Job{ID: "run-123", Status: tfe.RunPlanQueued}
+	want := &ots.Job{ID: "job-123", Status: ots.JobPending}
 
 	spooler := &SpoolerDaemon{queue: make(chan *ots.Job, 1)}
 	spooler.queue <- want
@@ -85,7 +78,7 @@ func TestSpooler_GetJob(t *testing.T) {
 // TestSpooler_GetJobFromEvent tests retrieving a job from the spooler after an
 // event is received
 func TestSpooler_GetJobFromEvent(t *testing.T) {
-	want := &ots.Run{ID: "run-123", Status: tfe.RunPlanQueued}
+	want := &ots.Job{ID: "job-123", Status: ots.JobPending}
 
 	sub := mockSubscription{c: make(chan ots.Event, 1)}
 
@@ -102,7 +95,7 @@ func TestSpooler_GetJobFromEvent(t *testing.T) {
 	go spooler.Start(context.Background())
 
 	// send event
-	sub.c <- ots.Event{Type: ots.PlanQueued, Payload: want}
+	sub.c <- ots.Event{Type: ots.JobCreatedEvent, Payload: want}
 
 	assert.Equal(t, want, <-spooler.GetJob())
 }

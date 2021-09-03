@@ -15,87 +15,55 @@ type Job struct {
 
 	AgentID string
 
+	Logs []byte
+
 	// Job belongs to a run
 	RunID uint
-	Run   *Run
-
-	// Job belongs to a workspace
-	WorkspaceID uint
-	Workspace   *Workspace
-
-	// Job belongs to a configuration version
-	ConfigurationVersionID uint
-	ConfigurationVersion   *ConfigurationVersion
 }
 
 // JobList is a list of job models
 type JobList []Job
 
-// Update updates the model with the supplied fn. The fn operates on the domain
-// obj, so Update handles converting to and from a domain obj.
-func (model *Job) Update(fn func(*ots.Job) error) error {
-	// model -> domain
-	domain := model.ToDomain()
-
-	// invoke user fn
-	if err := fn(domain); err != nil {
-		return err
-	}
-
-	// domain -> model
-	model.FromDomain(domain)
-
-	return nil
-}
-
-func (model *Job) ToDomain() *ots.Job {
+func (model *Job) ToDomain(run *Run) *ots.Job {
 	domain := ots.Job{
-		ID: model.ExternalID,
+		ID:      model.ExternalID,
+		AgentID: model.AgentID,
+		Logs:    model.Logs,
+		RunID:   run.ExternalID,
 	}
 
-	if model.Run != nil {
-		domain.Run = model.Run.ToDomain()
+	if run.ConfigurationVersion != nil {
+		domain.ConfigurationVersionID = run.ConfigurationVersion.ExternalID
 	}
 
-	if model.ConfigurationVersion != nil {
-		domain.ConfigurationVersion = model.ConfigurationVersion.ToDomain()
-	}
-
-	if model.Workspace != nil {
-		domain.Workspace = model.Workspace.ToDomain()
+	if run.Workspace != nil {
+		domain.WorkspaceID = run.Workspace.ExternalID
 	}
 
 	return &domain
 }
 
 // NewJobFromDomain constructs a model obj from a domain obj
-func NewJobFromDomain(domain *ots.Job) *Job {
+func NewJobFromDomain(domain *ots.Job, run *Run) *Job {
 	model := &Job{
-		ConfigurationVersion: &ConfigurationVersion{},
-		Workspace:            &Workspace{},
+		RunID: run.ID,
 	}
-	model.FromDomain(domain)
+	model.FromDomain(domain, run)
 
 	return model
 }
 
-// FromDomain updates run model fields with a run domain object's fields
-func (model *Job) FromDomain(domain *ots.Job) {
+// FromDomain updates job model fields with a job domain object's fields
+func (model *Job) FromDomain(domain *ots.Job, run *Run) {
 	model.ExternalID = domain.ID
 	model.Status = domain.Status
-
-	model.Run.FromDomain(domain.Run)
-
-	model.Workspace.FromDomain(domain.Workspace)
-	model.WorkspaceID = domain.Workspace.Model.ID
-
-	model.ConfigurationVersion.FromDomain(domain.ConfigurationVersion)
-	model.ConfigurationVersionID = domain.ConfigurationVersion.Model.ID
+	model.Logs = domain.Logs
+	model.AgentID = domain.AgentID
 }
 
-func (l JobList) ToDomain() (dl []*ots.Job) {
+func (l JobList) ToDomain(run *Run) (dl []*ots.Job) {
 	for _, i := range l {
-		dl = append(dl, i.ToDomain())
+		dl = append(dl, i.ToDomain(run))
 	}
 	return
 }

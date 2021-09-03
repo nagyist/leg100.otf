@@ -82,12 +82,10 @@ type RunService interface {
 	GetPlanJSON(id string) ([]byte, error)
 	GetPlanFile(id string) ([]byte, error)
 	UploadPlan(runID string, plan []byte, json bool) error
-
 	UpdatePlanSummary(runID string, summary ResourceSummary) error
 	UpdateApplySummary(runID string, summary ResourceSummary) error
 
-	StartJob(jobID string, opts JobStartOptions) error
-	FinishJob(jobID string, opts JobFinishOptions) error
+	JobService
 }
 
 // ResourceSummary is a summary of resource updates resulting from a terraform
@@ -234,6 +232,16 @@ func (r *Run) FinishJob(jobID string, opts JobFinishOptions) (*Job, error) {
 	}
 
 	return nil, nil
+}
+
+// GetJob retrieves a run's job with the given ID.
+func (r *Run) GetJob(id string) (*Job, error) {
+	for _, job := range []*Job{r.PlanJob, r.ApplyJob} {
+		if job.ID == id {
+			return job, nil
+		}
+	}
+	return nil, fmt.Errorf("run %s does not have a job with ID %s", r.ID, id)
 }
 
 // CurrentJob returns the currently active job for the run, or nil if no job is

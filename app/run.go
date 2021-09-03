@@ -1,6 +1,8 @@
 package app
 
 import (
+	"fmt"
+
 	"github.com/leg100/go-tfe"
 	"github.com/leg100/ots"
 )
@@ -55,17 +57,39 @@ func (s RunService) List(opts ots.RunListOptions) (*ots.RunList, error) {
 	return s.db.List(opts)
 }
 
-func (s RunService) Apply(id string, opts *tfe.RunApplyOptions) error {
-	run, err := s.db.Update(id, func(run *ots.Run) error {
-		run.UpdateStatus(tfe.RunApplyQueued)
+// ListJobs retrieves a list of jobs. Use opts to filter the list.
+func (s RunService) ListJobs(opts ots.JobLogOptions) ([]*ots.Job, error) {
+	var jobs []*ots.Job
 
-		return nil
+	runs, err := s.db.List(ots.RunListOptions{})
+	if err != nil {
+		return nil, err
+	}
+
+	for _, run := range runs.Items {
+		if run.ApplyJob != nil {
+			jobs = append(jobs, run.ApplyJob)
+		}
+		if run.PlanJob != nil {
+			jobs = append(jobs, run.PlanJob)
+		}
+	}
+
+	return jobs, nil
+}
+
+func (s RunService) Apply(id string, opts *tfe.RunApplyOptions) error {
+	var job *ots.Job
+
+	_, err := s.db.Update(id, func(run *ots.Run) (err error) {
+		job, err = run.EnqueueApply()
+		return err
 	})
 	if err != nil {
 		return err
 	}
 
-	s.es.Publish(ots.Event{Type: ots.ApplyQueued, Payload: run})
+	s.es.Publish(ots.Event{Type: ots.JobCreatedEvent, Payload: job})
 
 	return err
 }
@@ -126,7 +150,7 @@ func (s RunService) EnqueuePlan(id string) error {
 		return err
 	}
 
-	s.es.Publish(ots.Event{Type: ots.JobCreated, Payload: job})
+	s.es.Publish(ots.Event{Type: ots.JobCreatedEvent, Payload: job})
 
 	return err
 }
@@ -168,10 +192,68 @@ func (s RunService) FinishJob(jobID string, opts ots.JobFinishOptions) error {
 	}
 
 	if applyJob != nil {
-		s.es.Publish(ots.Event{Type: ots.JobCreated, Payload: applyJob})
+		s.es.Publish(ots.Event{Type: ots.JobCreatedEvent, Payload: applyJob})
 	}
 
 	return err
+}
+
+// UploadJobLogs persists a run job's logs.
+//
+// TODO: avoid DB queries - job constructor should instead create a GUID/BlobID
+// and then client uses this to upload logs and server can then use that to
+// persist directly to blob service
+func (s RunService) UploadJobLogs(jobID string, out []byte) error {
+	run, err := s.db.Get(ots.RunGetOptions{JobID: &jobID})
+	if err != nil {
+		return nil
+	}
+
+	_, err = s.db.Update(run.ID, func(run *ots.Run) error {
+		job, err := run.GetJob(jobID)
+		if err != nil {
+			return nil
+		}
+		job.Logs = out
+		return nil
+	})
+	return err
+}
+
+func (s RunService) GetJobLogs(jobID string, opts ots.JobLogOptions) ([]byte, error) {
+	run, err := s.db.Get(ots.RunGetOptions{JobID: &jobID})
+	if err != nil {
+		return nil, err
+	}
+	job, err := run.GetJob(jobID)
+	if err != nil {
+		return nil, err
+	}
+
+	logs := job.Logs
+
+	// Add start marker
+	logs = append([]byte{byte(2)}, logs...)
+
+	// Add end marker
+	logs = append(logs, byte(3))
+
+	if opts.Offset > len(logs) {
+		return nil, fmt.Errorf("offset cannot be bigger than total logs")
+	}
+
+	if opts.Limit > ots.MaxPlanLogsLimit {
+		opts.Limit = ots.MaxPlanLogsLimit
+	}
+
+	// Ensure specified chunk does not exceed slice length
+	if (opts.Offset + opts.Limit) > len(logs) {
+		opts.Limit = len(logs) - opts.Offset
+	}
+
+	resp := logs[opts.Offset:(opts.Offset + opts.Limit)]
+
+	return resp, nil
 }
 
 func (s RunService) UpdateStatus(id string, status tfe.RunStatus) (*ots.Run, error) {

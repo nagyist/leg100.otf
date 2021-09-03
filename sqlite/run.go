@@ -79,7 +79,7 @@ func (db RunDB) List(opts ots.RunListOptions) (*ots.RunList, error) {
 			query = query.Where("workspace_id = ?", ws.Model.ID)
 		}
 
-		// Optionally filter by statuses
+		// Optionally filter by run statuses
 		if len(opts.Statuses) > 0 {
 			query = query.Where("status IN ?", opts.Statuses)
 		}
@@ -125,6 +125,8 @@ func getRun(db *gorm.DB, opts ots.RunGetOptions) (*Run, error) {
 		query = query.Joins("JOIN plans ON plans.run_id = runs.id").Where("plans.external_id = ?", opts.PlanID)
 	case opts.ApplyID != nil:
 		query = query.Joins("JOIN applies ON applies.run_id = runs.id").Where("applies.external_id = ?", opts.ApplyID)
+	case opts.JobID != nil:
+		query = query.Joins("JOIN jobs ON jobs.run_id = runs.id").Where("jobs.external_id = ?", opts.JobID)
 	default:
 		return nil, ots.ErrInvalidRunGetOptions
 	}

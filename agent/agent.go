@@ -42,7 +42,7 @@ type Agent struct {
 func NewAgent(logger logr.Logger, cvs ots.ConfigurationVersionService, svs ots.StateVersionService, rs ots.RunService, es ots.EventService) (*Agent, error) {
 	logger = logger.WithValues("component", "agent")
 
-	spooler, err := NewSpooler(cvs, svs, rs, es, logger)
+	spooler, err := NewSpooler(rs, es, logger)
 	if err != nil {
 		return nil, err
 	}

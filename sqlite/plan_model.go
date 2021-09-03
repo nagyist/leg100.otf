@@ -64,16 +64,17 @@ func (model *Plan) Update(fn func(*ots.Plan) error) error {
 
 func (model *Plan) ToDomain() *ots.Plan {
 	domain := ots.Plan{
-		ID:                   model.ExternalID,
-		Model:                model.Model,
-		ResourceAdditions:    model.ResourceAdditions,
-		ResourceChanges:      model.ResourceChanges,
-		ResourceDestructions: model.ResourceDestructions,
-		Status:               model.Status,
-		StatusTimestamps:     &tfe.PlanStatusTimestamps{},
-		Logs:                 model.Logs,
-		PlanFileBlobID:       model.PlanFileBlobID,
-		PlanJSONBlobID:       model.PlanJSONBlobID,
+		ID:    model.ExternalID,
+		Model: model.Model,
+		ResourceSummary: ots.ResourceSummary{
+			ResourceAdditions:    model.ResourceAdditions,
+			ResourceChanges:      model.ResourceChanges,
+			ResourceDestructions: model.ResourceDestructions,
+		},
+		Status:           model.Status,
+		StatusTimestamps: &tfe.PlanStatusTimestamps{},
+		PlanFileBlobID:   model.PlanFileBlobID,
+		PlanJSONBlobID:   model.PlanJSONBlobID,
 	}
 
 	if model.StatusTimestamps.CanceledAt.Valid {
@@ -111,7 +112,6 @@ func (model *Plan) FromDomain(domain *ots.Plan) {
 	model.ResourceChanges = domain.ResourceChanges
 	model.ResourceDestructions = domain.ResourceDestructions
 	model.Status = domain.Status
-	model.Logs = domain.Logs
 	model.PlanFileBlobID = domain.PlanFileBlobID
 	model.PlanJSONBlobID = domain.PlanJSONBlobID
 

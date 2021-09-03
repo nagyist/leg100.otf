@@ -31,11 +31,13 @@ type Run struct {
 	// Comma separated list of target addresses
 	TargetAddrs string
 
-	// Run has one plan
-	Plan *Plan
+	// Run has one plan and one plan job
+	Plan    *Plan
+	PlanJob *Job
 
-	// Run has one apply
-	Apply *Apply
+	// Run has one apply and one apply job
+	Apply    *Apply
+	ApplyJob *Job
 
 	// Run belongs to a workspace
 	WorkspaceID uint
@@ -154,12 +156,20 @@ func (model *Run) ToDomain() *ots.Run {
 		domain.Apply = model.Apply.ToDomain()
 	}
 
+	if model.ApplyJob != nil {
+		domain.ApplyJob = model.ApplyJob.ToDomain(model)
+	}
+
 	if model.ConfigurationVersion != nil {
 		domain.ConfigurationVersion = model.ConfigurationVersion.ToDomain()
 	}
 
 	if model.Plan != nil {
 		domain.Plan = model.Plan.ToDomain()
+	}
+
+	if model.PlanJob != nil {
+		domain.PlanJob = model.PlanJob.ToDomain(model)
 	}
 
 	if model.Workspace != nil {
@@ -274,7 +284,17 @@ func (model *Run) FromDomain(domain *ots.Run) {
 
 	model.Apply.FromDomain(domain.Apply)
 
+	if domain.ApplyJob != nil {
+		model.ApplyJob = &Job{}
+		model.ApplyJob.FromDomain(domain.ApplyJob, model)
+	}
+
 	model.Plan.FromDomain(domain.Plan)
+
+	if domain.PlanJob != nil {
+		model.PlanJob = &Job{}
+		model.PlanJob.FromDomain(domain.PlanJob, model)
+	}
 
 	model.Workspace.FromDomain(domain.Workspace)
 	model.WorkspaceID = domain.Workspace.Model.ID

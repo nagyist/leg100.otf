@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	tfe "github.com/leg100/go-tfe"
+	"gorm.io/gorm"
 )
 
 const (
@@ -22,9 +23,11 @@ type JobStatus string
 type Job struct {
 	ID string
 
+	gorm.Model
+
 	// Operation is the particular terraform task the job is carrying out: a
 	// plan or an apply
-	Operation Step
+	StepsProvider
 
 	// Status is the current status of the job
 	Status JobStatus
@@ -43,6 +46,8 @@ type Job struct {
 	ConfigurationVersionID string
 
 	// StateVersionID is the ID of the state version pertaining to the job.
+	//
+	// TODO: we don't actually populate this, remove or populate.
 	StateVersionID string
 
 	// Logs are the stdout/stderr log output
@@ -51,18 +56,19 @@ type Job struct {
 
 type JobService interface {
 	// Start is called by an agent when it starts the job. ErrJobAlreadyStarted
-	// should be returned if another agent has already started it.
-	Start(id string, opts JobStartOptions) error
+	StartJob(id string, opts JobStartOptions) error
 
 	// Finish is called to signal completion of the job
-	Finish(id string, opts JobFinishOptions) error
+	FinishJob(id string, opts JobFinishOptions) error
 
-	UploadLogs(id string, out []byte) error
+	ListJobs(opts JobListOptions) ([]*Job, error)
+
+	UploadJobLogs(id string, out []byte) error
+	GetJobLogs(id string, opts JobLogOptions) ([]byte, error)
 }
 
 // JobStore implementations persist Job objects.
 type JobStore interface {
-	Create(*Job) (*Job, error)
 	Get(id string) (*Job, error)
 	List() ([]*Job, error)
 	// TODO: add support for a special error type that tells update to skip
@@ -87,6 +93,11 @@ type JobLogOptions struct {
 	Offset int `schema:"offset"`
 }
 
+type JobListOptions struct {
+	// Filter by job statuses (with an implicit OR condition)
+	Statuses []JobStatus
+}
+
 // NewJobFromRun constructs a job from a run.
 func NewJobFromRun(run *Run) (*Job, error) {
 	job := &Job{
@@ -99,9 +110,9 @@ func NewJobFromRun(run *Run) (*Job, error) {
 
 	switch run.Status {
 	case tfe.RunPlanQueued:
-		job.Operation = NewPlanOperation()
+		job.StepsProvider = &PlanStepsProvider{}
 	case tfe.RunApplyQueued:
-		job.Operation = NewApplyOperation()
+		job.StepsProvider = &ApplyStepsProvider{}
 	default:
 		return nil, fmt.Errorf("invalid run status for new job: %s", run.Status)
 	}

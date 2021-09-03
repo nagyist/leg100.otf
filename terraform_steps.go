@@ -50,13 +50,14 @@ var (
 	}
 )
 
-func NewPlanOperation() Step {
-	return NewMultiStep(PlanSteps)
-}
+type PlanStepsProvider struct{}
+type ApplyStepsProvider struct{}
 
-func NewApplyOperation() Step {
-	return NewMultiStep(PlanSteps)
-}
+func (*PlanStepsProvider) Steps() []Step  { return PlanSteps }
+func (*PlanStepsProvider) String() string { return "plan" }
+
+func (*ApplyStepsProvider) Steps() []Step  { return ApplySteps }
+func (*ApplyStepsProvider) String() string { return "apply" }
 
 func DownloadConfigStep(ctx context.Context, path string, job *Job, svc StepService) error {
 	// Download config

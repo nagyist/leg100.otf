@@ -20,22 +20,20 @@ type Supervisor struct {
 
 	logr.Logger
 
-	RunService                  ots.RunService
-	ConfigurationVersionService ots.ConfigurationVersionService
-	StateVersionService         ots.StateVersionService
-	JobService                  ots.JobService
+	ots.JobService
+
+	StepService ots.StepService
 
 	Spooler
 }
 
 func NewSupervisor(spooler Spooler, cvs ots.ConfigurationVersionService, svs ots.StateVersionService, rs ots.RunService, logger logr.Logger, concurrency int) *Supervisor {
 	return &Supervisor{
-		Spooler:                     spooler,
-		RunService:                  rs,
-		StateVersionService:         svs,
-		ConfigurationVersionService: cvs,
-		Logger:                      logger,
-		concurrency:                 concurrency,
+		Spooler:     spooler,
+		JobService:  rs,
+		StepService: ots.NewStepService(rs, cvs, svs),
+		Logger:      logger,
+		concurrency: concurrency,
 	}
 }
 
@@ -64,7 +62,7 @@ func (s *Supervisor) handleJob(ctx context.Context, job *ots.Job) {
 		return
 	}
 
-	if err := s.JobService.Start(job.ID, ots.JobStartOptions{AgentID: DefaultID}); err != nil {
+	if err := s.StartJob(job.ID, ots.JobStartOptions{AgentID: DefaultID}); err != nil {
 		s.Error(err, "unable to start job")
 		return
 	}
@@ -74,15 +72,19 @@ func (s *Supervisor) handleJob(ctx context.Context, job *ots.Job) {
 	// For logs
 	out := new(bytes.Buffer)
 
-	if err := job.Do(ctx, path, out); err != nil {
-		s.Error(err, "unable to do job")
+	jobStatus := ots.JobCompleted
+	msteps := ots.NewMultiStep(job.Steps())
+
+	if err := msteps.Run(ctx, path, out, job, s.StepService); err != nil {
+		s.Error(err, "unable to run job")
+		jobStatus = ots.JobErrored
 	}
 
-	if err := s.JobService.UploadLogs(job.ID, out.Bytes()); err != nil {
-		s.Error(err, "unable to upload logs for job")
-	}
-
-	if err := s.JobService.Finish(job.ID); err != nil {
+	if err := s.FinishJob(job.ID, ots.JobFinishOptions{Status: jobStatus}); err != nil {
 		s.Error(err, "unable to finish job")
+	}
+
+	if err := s.UploadJobLogs(job.ID, out.Bytes()); err != nil {
+		s.Error(err, "unable to upload logs for job")
 	}
 }

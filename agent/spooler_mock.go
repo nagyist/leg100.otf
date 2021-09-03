@@ -7,18 +7,18 @@ import (
 )
 
 type mockSpooler struct {
-	queue chan *ots.Run
+	queue chan *ots.Job
 }
 
-func newMockSpooler(run ...*ots.Run) *mockSpooler {
-	queue := make(chan *ots.Run, len(run))
+func newMockSpooler(run ...*ots.Job) *mockSpooler {
+	queue := make(chan *ots.Job, len(run))
 	for _, r := range run {
 		queue <- r
 	}
 	return &mockSpooler{queue: queue}
 }
 
-func (s *mockSpooler) GetJob() <-chan *ots.Run {
+func (s *mockSpooler) GetJob() <-chan *ots.Job {
 	return s.queue
 }
 

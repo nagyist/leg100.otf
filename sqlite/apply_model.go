@@ -58,14 +58,16 @@ func (model *Apply) Update(fn func(*ots.Apply) error) error {
 
 func (model *Apply) ToDomain() *ots.Apply {
 	domain := ots.Apply{
-		ID:                   model.ExternalID,
-		Model:                model.Model,
-		ResourceAdditions:    model.ResourceAdditions,
-		ResourceChanges:      model.ResourceChanges,
-		ResourceDestructions: model.ResourceDestructions,
-		Status:               model.Status,
-		StatusTimestamps:     &tfe.ApplyStatusTimestamps{},
-		Logs:                 model.Logs,
+		ID:    model.ExternalID,
+		Model: model.Model,
+		ResourceSummary: ots.ResourceSummary{
+			ResourceAdditions:    model.ResourceAdditions,
+			ResourceChanges:      model.ResourceChanges,
+			ResourceDestructions: model.ResourceDestructions,
+		},
+		Status:           model.Status,
+		StatusTimestamps: &tfe.ApplyStatusTimestamps{},
+		Logs:             model.Logs,
 	}
 
 	if model.StatusTimestamps.CanceledAt.Valid {

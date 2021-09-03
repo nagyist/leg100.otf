@@ -8,24 +8,26 @@ import (
 var _ ots.RunService = (*RunService)(nil)
 
 type RunService struct {
-	CreateFn          func(opts *tfe.RunCreateOptions) (*ots.Run, error)
-	GetFn             func(id string) (*ots.Run, error)
-	ListFn            func(opts ots.RunListOptions) (*ots.RunList, error)
-	ApplyFn           func(id string, opts *tfe.RunApplyOptions) error
-	DiscardFn         func(id string, opts *tfe.RunDiscardOptions) error
-	CancelFn          func(id string, opts *tfe.RunCancelOptions) error
-	ForceCancelFn     func(id string, opts *tfe.RunForceCancelOptions) error
-	GetPlanLogsFn     func(id string, opts ots.PlanLogOptions) ([]byte, error)
-	GetApplyLogsFn    func(id string, opts ots.ApplyLogOptions) ([]byte, error)
-	EnqueuePlanFn     func(id string) error
-	UpdateStatusFn    func(id string, status tfe.RunStatus) (*ots.Run, error)
-	UploadPlanLogsFn  func(id string, logs []byte) error
-	UploadApplyLogsFn func(id string, logs []byte) error
-	FinishPlanFn      func(id string, opts ots.PlanFinishOptions) (*ots.Run, error)
-	FinishApplyFn     func(id string, opts ots.ApplyFinishOptions) (*ots.Run, error)
-	GetPlanJSONFn     func(id string) ([]byte, error)
-	GetPlanFileFn     func(id string) ([]byte, error)
-	UploadPlanFn      func(id string, plan []byte, json bool) error
+	CreateFn             func(opts *tfe.RunCreateOptions) (*ots.Run, error)
+	GetFn                func(id string) (*ots.Run, error)
+	ListFn               func(opts ots.RunListOptions) (*ots.RunList, error)
+	ApplyFn              func(id string, opts *tfe.RunApplyOptions) error
+	DiscardFn            func(id string, opts *tfe.RunDiscardOptions) error
+	CancelFn             func(id string, opts *tfe.RunCancelOptions) error
+	ForceCancelFn        func(id string, opts *tfe.RunForceCancelOptions) error
+	EnqueuePlanFn        func(id string) error
+	UpdateStatusFn       func(id string, status tfe.RunStatus) (*ots.Run, error)
+	GetPlanJSONFn        func(id string) ([]byte, error)
+	GetPlanFileFn        func(id string) ([]byte, error)
+	UploadPlanFn         func(id string, plan []byte, json bool) error
+	UpdatePlanSummaryFn  func(id string, summary ots.ResourceSummary) error
+	UpdateApplySummaryFn func(id string, summary ots.ResourceSummary) error
+
+	StartJobFn      func(id string, opts ots.JobStartOptions) error
+	FinishJobFn     func(id string, opts ots.JobFinishOptions) error
+	ListJobsFn      func(opts ots.JobListOptions) ([]*ots.Job, error)
+	UploadJobLogsFn func(id string, logs []byte) error
+	GetJobLogsFn    func(id string, opts ots.JobLogOptions) ([]byte, error)
 }
 
 func (s RunService) Create(opts *tfe.RunCreateOptions) (*ots.Run, error) {
@@ -56,36 +58,12 @@ func (s RunService) ForceCancel(id string, opts *tfe.RunForceCancelOptions) erro
 	return s.ForceCancelFn(id, opts)
 }
 
-func (s RunService) GetPlanLogs(id string, opts ots.PlanLogOptions) ([]byte, error) {
-	return s.GetPlanLogsFn(id, opts)
-}
-
-func (s RunService) GetApplyLogs(id string, opts ots.ApplyLogOptions) ([]byte, error) {
-	return s.GetApplyLogsFn(id, opts)
-}
-
 func (s RunService) EnqueuePlan(id string) error {
 	return s.EnqueuePlanFn(id)
 }
 
 func (s RunService) UpdateStatus(id string, status tfe.RunStatus) (*ots.Run, error) {
 	return s.UpdateStatusFn(id, status)
-}
-
-func (s RunService) UploadPlanLogs(id string, logs []byte) error {
-	return s.UploadPlanLogsFn(id, logs)
-}
-
-func (s RunService) UploadApplyLogs(id string, logs []byte) error {
-	return s.UploadApplyLogsFn(id, logs)
-}
-
-func (s RunService) FinishPlan(id string, opts ots.PlanFinishOptions) (*ots.Run, error) {
-	return s.FinishPlanFn(id, opts)
-}
-
-func (s RunService) FinishApply(id string, opts ots.ApplyFinishOptions) (*ots.Run, error) {
-	return s.FinishApplyFn(id, opts)
 }
 
 func (s RunService) GetPlanJSON(id string) ([]byte, error) {
@@ -98,4 +76,32 @@ func (s RunService) GetPlanFile(id string) ([]byte, error) {
 
 func (s RunService) UploadPlan(id string, plan []byte, json bool) error {
 	return s.UploadPlanFn(id, plan, json)
+}
+
+func (s RunService) UpdatePlanSummary(id string, summary ots.ResourceSummary) error {
+	return s.UpdatePlanSummaryFn(id, summary)
+}
+
+func (s RunService) UpdateApplySummary(id string, summary ots.ResourceSummary) error {
+	return s.UpdateApplySummaryFn(id, summary)
+}
+
+func (s RunService) StartJob(id string, opts ots.JobStartOptions) error {
+	return s.StartJobFn(id, opts)
+}
+
+func (s RunService) FinishJob(id string, opts ots.JobFinishOptions) error {
+	return s.FinishJobFn(id, opts)
+}
+
+func (s RunService) ListJobs(opts ots.JobListOptions) ([]*ots.Job, error) {
+	return s.ListJobsFn(opts)
+}
+
+func (s RunService) UploadJobLogs(id string, logs []byte) error {
+	return s.UploadJobLogsFn(id, logs)
+}
+
+func (s RunService) GetJobLogs(id string, opts ots.JobLogOptions) ([]byte, error) {
+	return s.GetJobLogsFn(id, opts)
 }

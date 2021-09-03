@@ -5,19 +5,11 @@ import (
 	"io"
 	"os"
 	"os/exec"
-
-	tfe "github.com/leg100/go-tfe"
 )
 
-type StepService interface {
-	DownloadConfig(id string) ([]byte, error)
-	GetPlanFile(id string) ([]byte, error)
-	GetCurrentState(workspaceID string) (*StateVersion, error)
-	DownloadState(id string) ([]byte, error)
-	CreateStateVersion(workspaceID string, opts tfe.StateVersionCreateOptions) (*StateVersion, error)
-	UploadPlanFile(runID string, file []byte, json bool) error
-	UpdatePlanSummary(runID string, summary ResourceSummary) error
-	UpdateApplySummary(runID string, summary ResourceSummary) error
+type StepsProvider interface {
+	Steps() []Step
+	String() string
 }
 
 // Step is a cancelable task that forms part of a larger task (see MultiStep).

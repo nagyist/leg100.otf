@@ -3,16 +3,17 @@ package ots
 const (
 	OrganizationCreated EventType = "organization_created"
 	OrganizationDeleted EventType = "organization_deleted"
-	WorkspaceCreated    EventType = "workspace_created"
-	WorkspaceDeleted    EventType = "workspace_deleted"
-	RunCreated          EventType = "run_created"
-	RunCompleted        EventType = "run_completed"
-	PlanQueued          EventType = "plan_queued"
-	ApplyQueued         EventType = "apply_queued"
-	JobCreated          EventType = "job_created"
-	JobStartedEvent     EventType = "job_started"
-	JobCompletedEvent   EventType = "job_completed"
-	JobCanceledEvent    EventType = "job_canceled"
+
+	WorkspaceCreated EventType = "workspace_created"
+	WorkspaceDeleted EventType = "workspace_deleted"
+
+	RunCreated   EventType = "run_created"
+	RunCompleted EventType = "run_completed"
+
+	JobCreatedEvent   EventType = "job_created"
+	JobStartedEvent   EventType = "job_started"
+	JobCompletedEvent EventType = "job_completed"
+	JobCanceledEvent  EventType = "job_canceled"
 )
 
 type EventType string

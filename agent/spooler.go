@@ -4,7 +4,6 @@ import (
 	"context"
 
 	"github.com/go-logr/logr"
-	"github.com/leg100/go-tfe"
 	"github.com/leg100/ots"
 )
 
@@ -24,14 +23,10 @@ type SpoolerDaemon struct {
 	ots.EventService
 	// Logger for logging various events
 	logr.Logger
-
-	cvs ots.ConfigurationVersionService
-	svs ots.StateVersionService
-	rs  ots.RunService
 }
 
-type RunLister interface {
-	List(ots.RunListOptions) (*ots.RunList, error)
+type JobLister interface {
+	ListJobs(ots.JobListOptions) ([]*ots.Job, error)
 }
 
 const (
@@ -39,38 +34,27 @@ const (
 	SpoolerCapacity = 100
 )
 
-var (
-	// QueuedStatuses are the list of run statuses that indicate it is in a
-	// queued state
-	QueuedStatuses = []tfe.RunStatus{tfe.RunPlanQueued, tfe.RunApplyQueued}
-)
-
 // NewSpooler is a constructor for a Spooler pre-populated with queued runs
 func NewSpooler(
-	cvs ots.ConfigurationVersionService,
-	svs ots.StateVersionService,
-	rs ots.RunService,
+	jl JobLister,
 	es ots.EventService,
 	logger logr.Logger) (*SpoolerDaemon, error) {
 
-	// TODO: order runs by created_at date
-	runs, err := rs.List(ots.RunListOptions{Statuses: QueuedStatuses})
+	// TODO: order jobs by created_at date
+	jobs, err := jl.ListJobs(ots.JobListOptions{})
 	if err != nil {
 		return nil, err
 	}
 
 	// Populate queue
 	queue := make(chan *ots.Job, SpoolerCapacity)
-	for _, r := range runs.Items {
-		queue <- ots.NewJobFromRun(r, cvs, svs, rs)
+	for _, j := range jobs {
+		queue <- j
 	}
 
 	return &SpoolerDaemon{
 		queue:        queue,
 		EventService: es,
-		cvs:          cvs,
-		svs:          svs,
-		rs:           rs,
 		Logger:       logger,
 	}, nil
 }
@@ -97,13 +81,13 @@ func (s *SpoolerDaemon) GetJob() <-chan *ots.Job {
 
 func (s *SpoolerDaemon) handleEvent(ev ots.Event) {
 	switch obj := ev.Payload.(type) {
-	case *ots.Run:
-		s.Info("run event received", "run", obj.ID, "type", ev.Type, "status", obj.Status)
+	case *ots.Job:
+		s.Info("job event received", "run", obj.ID, "type", ev.Type, "status", obj.Status)
 
 		switch ev.Type {
-		case ots.PlanQueued, ots.ApplyQueued:
-			s.queue <- ots.NewJobFromRun(obj, s.cvs, s.svs, s.rs)
-		case ots.RunCanceled:
+		case ots.JobCreatedEvent:
+			s.queue <- obj
+		case ots.JobCanceledEvent:
 			// TODO: forward event immediately to job supervisor
 		}
 	}
