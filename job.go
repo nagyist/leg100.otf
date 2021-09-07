@@ -45,11 +45,6 @@ type Job struct {
 	// to the job.
 	ConfigurationVersionID string
 
-	// StateVersionID is the ID of the state version pertaining to the job.
-	//
-	// TODO: we don't actually populate this, remove or populate.
-	StateVersionID string
-
 	// Logs are the stdout/stderr log output
 	Logs []byte
 }

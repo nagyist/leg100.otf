@@ -10,7 +10,7 @@ import (
 	"github.com/hashicorp/hcl/v2/hclwrite"
 )
 
-func deleteBackendConfigFromDirectory(ctx context.Context, dir string, _ *Job, _ StepService) error {
+func deleteBackendConfigFromDirectory(ctx context.Context, dir string, _ *Job) error {
 	return filepath.Walk(dir, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			return nil

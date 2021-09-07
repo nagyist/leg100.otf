@@ -20,20 +20,21 @@ type Supervisor struct {
 
 	logr.Logger
 
-	ots.JobService
-
-	StepService ots.StepService
+	ots.RunService
+	ots.ConfigurationVersionService
+	ots.StateVersionService
 
 	Spooler
 }
 
 func NewSupervisor(spooler Spooler, cvs ots.ConfigurationVersionService, svs ots.StateVersionService, rs ots.RunService, logger logr.Logger, concurrency int) *Supervisor {
 	return &Supervisor{
-		Spooler:     spooler,
-		JobService:  rs,
-		StepService: ots.NewStepService(rs, cvs, svs),
-		Logger:      logger,
-		concurrency: concurrency,
+		Spooler:                     spooler,
+		RunService:                  rs,
+		StateVersionService:         svs,
+		ConfigurationVersionService: cvs,
+		Logger:                      logger,
+		concurrency:                 concurrency,
 	}
 }
 
@@ -73,9 +74,9 @@ func (s *Supervisor) handleJob(ctx context.Context, job *ots.Job) {
 	out := new(bytes.Buffer)
 
 	jobStatus := ots.JobCompleted
-	msteps := ots.NewMultiStep(job.Steps())
+	msteps := ots.NewMultiStep(job.Steps(s.RunService, s.ConfigurationVersionService, s.StateVersionService))
 
-	if err := msteps.Run(ctx, path, out, job, s.StepService); err != nil {
+	if err := msteps.Run(ctx, path, out, job); err != nil {
 		s.Error(err, "unable to run job")
 		jobStatus = ots.JobErrored
 	}

@@ -8,7 +8,7 @@ import (
 )
 
 type StepsProvider interface {
-	Steps() []Step
+	Steps(RunService, ConfigurationVersionService, StateVersionService) []Step
 	String() string
 }
 
@@ -19,7 +19,7 @@ type Step interface {
 	Cancel(force bool)
 	// Run invokes the task. Path can be used to share artefacts with other
 	// steps. Informational output is expected to be written to out.
-	Run(ctx context.Context, path string, out io.Writer, job *Job, svc StepService) error
+	Run(ctx context.Context, path string, out io.Writer, job *Job) error
 }
 
 // CommandStep is a cancelable executable CLI task.
@@ -48,7 +48,7 @@ func (s *CommandStep) Cancel(force bool) {
 	}
 }
 
-func (s *CommandStep) Run(ctx context.Context, path string, out io.Writer, _ *Job, _ StepService) error {
+func (s *CommandStep) Run(ctx context.Context, path string, out io.Writer, _ *Job) error {
 	cmd := exec.Command(s.cmd, s.args...)
 	cmd.Dir = path
 	cmd.Stdout = out
@@ -62,10 +62,10 @@ func (s *CommandStep) Run(ctx context.Context, path string, out io.Writer, _ *Jo
 // FuncStep is a cancelable go func task
 type FuncStep struct {
 	cancel context.CancelFunc
-	fn     func(context.Context, string, *Job, StepService) error
+	fn     func(context.Context, string, *Job) error
 }
 
-func NewFuncStep(fn func(context.Context, string, *Job, StepService) error) *FuncStep {
+func NewFuncStep(fn func(context.Context, string, *Job) error) *FuncStep {
 	return &FuncStep{
 		fn: fn,
 	}
@@ -82,7 +82,7 @@ func (s *FuncStep) Cancel(force bool) {
 }
 
 // Run invokes the func, setting the working dir to the given path
-func (s *FuncStep) Run(ctx context.Context, path string, out io.Writer, job *Job, svc StepService) error {
+func (s *FuncStep) Run(ctx context.Context, path string, out io.Writer, job *Job) error {
 	ctx, s.cancel = context.WithCancel(ctx)
-	return s.fn(ctx, path, job, svc)
+	return s.fn(ctx, path, job)
 }
