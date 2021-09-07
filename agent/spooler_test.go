@@ -6,33 +6,18 @@ import (
 
 	"github.com/go-logr/logr"
 	"github.com/leg100/ots"
+	"github.com/leg100/ots/agent/mocks"
 	"github.com/leg100/ots/mock"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
-
-type mockJobLister struct {
-	jobs []*ots.Job
-}
-
-func (l *mockJobLister) ListJobs(opts ots.JobListOptions) ([]*ots.Job, error) {
-	return l.jobs, nil
-}
-
-type mockSubscription struct {
-	c chan ots.Event
-}
-
-func (s *mockSubscription) C() <-chan ots.Event { return s.c }
-
-func (s *mockSubscription) Close() error { return nil }
 
 // TestSpooler_New tests the spooler constructor
 func TestSpooler_New(t *testing.T) {
 	want := &ots.Job{ID: "run-123", Status: ots.JobPending}
 
 	spooler, err := NewSpooler(
-		&mockJobLister{jobs: []*ots.Job{want}},
+		&mocks.JobLister{Jobs: []*ots.Job{want}},
 		&mock.EventService{},
 		logr.Discard(),
 	)
@@ -46,7 +31,7 @@ func TestSpooler_Start(t *testing.T) {
 	spooler := &SpoolerDaemon{
 		EventService: &mock.EventService{
 			SubscribeFn: func(id string) ots.Subscription {
-				return &mockSubscription{}
+				return &mocks.Subscription{}
 			},
 		},
 		Logger: logr.Discard(),
@@ -80,13 +65,13 @@ func TestSpooler_GetJob(t *testing.T) {
 func TestSpooler_GetJobFromEvent(t *testing.T) {
 	want := &ots.Job{ID: "job-123", Status: ots.JobPending}
 
-	sub := mockSubscription{c: make(chan ots.Event, 1)}
+	sub := mocks.NewSubscription(1)
 
 	spooler := &SpoolerDaemon{
 		queue: make(chan *ots.Job, 1),
 		EventService: &mock.EventService{
 			SubscribeFn: func(id string) ots.Subscription {
-				return &sub
+				return sub
 			},
 		},
 		Logger: logr.Discard(),
@@ -94,8 +79,7 @@ func TestSpooler_GetJobFromEvent(t *testing.T) {
 
 	go spooler.Start(context.Background())
 
-	// send event
-	sub.c <- ots.Event{Type: ots.JobCreatedEvent, Payload: want}
+	sub.SendEvent(ots.Event{Type: ots.JobCreatedEvent, Payload: want})
 
 	assert.Equal(t, want, <-spooler.GetJob())
 }

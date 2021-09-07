@@ -15,7 +15,7 @@ type Spooler interface {
 	Start(context.Context)
 }
 
-// SpoolerDaemon queues jobs.
+// SpoolerDaemon implements Spooler
 type SpoolerDaemon struct {
 	// Queue of queued runs
 	queue chan *ots.Job
