@@ -21,7 +21,7 @@ type Runner struct {
 	logStarted bool
 }
 
-type RunLogger func(id string, out []byte, opts UploadLogsOpts) error
+type RunLogger func(id string, out []byte, opts AppendLogOptions) error
 
 func NewRunner(steps []Step, rl RunLogger, logger logr.Logger, runID string) *Runner {
 	return &Runner{
@@ -81,7 +81,7 @@ func (r *Runner) Run(ctx context.Context) error {
 }
 
 func (r *Runner) writeLogs(ctx context.Context, end bool) {
-	opts := UploadLogsOpts{End: end}
+	opts := AppendLogOptions{End: end}
 	if !r.logStarted {
 		opts.Start = true
 	}

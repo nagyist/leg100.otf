@@ -19,8 +19,8 @@ type RunService struct {
 	GetApplyLogsFn    func(id string, opts ots.GetLogOptions) ([]byte, error)
 	EnqueuePlanFn     func(id string) error
 	UpdateStatusFn    func(id string, status tfe.RunStatus) (*ots.Run, error)
-	UploadPlanLogsFn  func(id string, logs []byte, opts ots.UploadLogsOpts) error
-	UploadApplyLogsFn func(id string, logs []byte, opts ots.UploadLogsOpts) error
+	UploadPlanLogsFn  func(id string, logs []byte, opts ots.AppendLogOptions) error
+	UploadApplyLogsFn func(id string, logs []byte, opts ots.AppendLogOptions) error
 	FinishPlanFn      func(id string, opts ots.PlanFinishOptions) (*ots.Run, error)
 	FinishApplyFn     func(id string, opts ots.ApplyFinishOptions) (*ots.Run, error)
 	GetPlanJSONFn     func(id string) ([]byte, error)
@@ -72,11 +72,11 @@ func (s RunService) UpdateStatus(id string, status tfe.RunStatus) (*ots.Run, err
 	return s.UpdateStatusFn(id, status)
 }
 
-func (s RunService) UploadPlanLogs(id string, logs []byte, opts ots.UploadLogsOpts) error {
+func (s RunService) UploadPlanLogs(id string, logs []byte, opts ots.AppendLogOptions) error {
 	return s.UploadPlanLogsFn(id, logs, opts)
 }
 
-func (s RunService) UploadApplyLogs(id string, logs []byte, opts ots.UploadLogsOpts) error {
+func (s RunService) UploadApplyLogs(id string, logs []byte, opts ots.AppendLogOptions) error {
 	return s.UploadApplyLogsFn(id, logs, opts)
 }
 

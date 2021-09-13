@@ -2,6 +2,8 @@ package ots
 
 import "fmt"
 
+// Logs is the output from a terraform task, with options for getting and
+// appending a 'chunk' of logs
 type Logs []byte
 
 type GetLogOptions struct {
@@ -12,6 +14,15 @@ type GetLogOptions struct {
 	Offset int `schema:"offset"`
 }
 
+type AppendLogOptions struct {
+	// Start indicates this is the first chunk
+	Start bool `schema:"start"`
+
+	// End indicates this is the last and final chunk
+	End bool `schema:"end"`
+}
+
+// Get retreives a log chunk.
 func (l Logs) Get(opts GetLogOptions) ([]byte, error) {
 	if len(l) == 0 {
 		return nil, nil
@@ -33,7 +44,8 @@ func (l Logs) Get(opts GetLogOptions) ([]byte, error) {
 	return l[opts.Offset:(opts.Offset + opts.Limit)], nil
 }
 
-func (l *Logs) Append(logs []byte, opts UploadLogsOpts) {
+// Append appends a log chunk.
+func (l *Logs) Append(logs []byte, opts AppendLogOptions) {
 	if opts.Start {
 		// Add start marker
 		*l = []byte{byte(2)}

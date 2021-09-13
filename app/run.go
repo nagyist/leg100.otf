@@ -214,7 +214,7 @@ func (s RunService) GetApplyLogs(id string, opts ots.GetLogOptions) ([]byte, err
 	return run.Apply.Logs.Get(opts)
 }
 
-func (s RunService) UploadPlanLogs(id string, logs []byte, opts ots.UploadLogsOpts) error {
+func (s RunService) UploadPlanLogs(id string, logs []byte, opts ots.AppendLogOptions) error {
 	_, err := s.db.Update(id, func(run *ots.Run) error {
 		run.Plan.Logs.Append(logs, opts)
 
@@ -223,7 +223,7 @@ func (s RunService) UploadPlanLogs(id string, logs []byte, opts ots.UploadLogsOp
 	return err
 }
 
-func (s RunService) UploadApplyLogs(id string, logs []byte, opts ots.UploadLogsOpts) error {
+func (s RunService) UploadApplyLogs(id string, logs []byte, opts ots.AppendLogOptions) error {
 	_, err := s.db.Update(id, func(run *ots.Run) error {
 		run.Apply.Logs.Append(logs, opts)
 

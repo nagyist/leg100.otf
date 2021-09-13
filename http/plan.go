@@ -68,7 +68,7 @@ func (s *Server) UploadPlanLogs(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var opts ots.UploadLogsOpts
+	var opts ots.AppendLogOptions
 
 	if err := DecodeQuery(&opts, r.URL.Query()); err != nil {
 		WriteError(w, http.StatusUnprocessableEntity, err)

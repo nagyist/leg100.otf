@@ -76,9 +76,9 @@ type RunService interface {
 	EnqueuePlan(id string) error
 	UpdateStatus(id string, status tfe.RunStatus) (*Run, error)
 	GetPlanLogs(id string, opts GetLogOptions) ([]byte, error)
-	UploadPlanLogs(id string, logs []byte, opts UploadLogsOpts) error
+	UploadPlanLogs(id string, logs []byte, opts AppendLogOptions) error
 	GetApplyLogs(id string, opts GetLogOptions) ([]byte, error)
-	UploadApplyLogs(id string, logs []byte, opts UploadLogsOpts) error
+	UploadApplyLogs(id string, logs []byte, opts AppendLogOptions) error
 	FinishPlan(id string, opts PlanFinishOptions) (*Run, error)
 	FinishApply(id string, opts ApplyFinishOptions) (*Run, error)
 	GetPlanJSON(id string) ([]byte, error)
