@@ -48,3 +48,8 @@ func GenerateRandomString(size int) string {
 	}
 	return string(buf)
 }
+
+type UploadLogsOpts struct {
+	Start bool `schema:"start"`
+	End   bool `schema:"end"`
+}
