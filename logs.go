@@ -22,7 +22,7 @@ type AppendLogOptions struct {
 	End bool `schema:"end"`
 }
 
-// Get retreives a log chunk.
+// Get retrieves a log chunk.
 func (l Logs) Get(opts GetLogOptions) ([]byte, error) {
 	if len(l) == 0 {
 		return nil, nil
