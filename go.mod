@@ -3,6 +3,9 @@ module github.com/leg100/otf
 go 1.16
 
 require (
+	github.com/charmbracelet/bubbles v0.9.0
+	github.com/charmbracelet/bubbletea v0.15.0
+	github.com/charmbracelet/lipgloss v0.3.0
 	github.com/go-logr/logr v1.0.0
 	github.com/google/uuid v1.3.0
 	github.com/gorilla/mux v1.8.0
