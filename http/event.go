@@ -1,7 +1,6 @@
 package http
 
 import (
-	"context"
 	"encoding/json"
 	"net/http"
 
@@ -25,20 +24,15 @@ func (s *Server) handleEvents(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ctx, cancel := context.WithCancel(r.Context())
-	r = r.WithContext(ctx)
-	conn.SetCloseHandler(func(code int, text string) error {
-		cancel()
-		return nil
-	})
+	done := make(chan struct{})
 
-	// We defer the connection close to ensure it is disconnected when we
-	// exit this function. This can occur if the HTTP request disconnects or
-	// if the subscription from the event service closes.
+	// We defer the connection close to ensure it is disconnected when we exit
+	// this function. This can occur if the HTTP request disconnects or if the
+	// subscription from the event service closes.
 	defer conn.Close()
 
 	// Ignore all incoming messages.
-	go ignoreWebSocketReaders(conn)
+	go ignoreWebSocketReaders(conn, done)
 
 	// Subscribe to all events for the current user.
 	sub := s.EventService.Subscribe(otf.GenerateID("sub"))
@@ -47,7 +41,7 @@ func (s *Server) handleEvents(w http.ResponseWriter, r *http.Request) {
 	// Stream all events to outgoing websocket writer.
 	for {
 		select {
-		case <-r.Context().Done():
+		case <-done:
 			return // disconnect when HTTP connection disconnects
 
 		case event, ok := <-sub.C():
@@ -77,10 +71,10 @@ func (s *Server) handleEvents(w http.ResponseWriter, r *http.Request) {
 //
 // This implementation was borrowed from gorilla's docs:
 // https://godoc.org/github.com/gorilla/websocket#hdr-Control_Messages
-func ignoreWebSocketReaders(conn *websocket.Conn) {
+func ignoreWebSocketReaders(conn *websocket.Conn, done chan struct{}) {
 	for {
 		if _, _, err := conn.NextReader(); err != nil {
-			conn.Close()
+			close(done)
 			return
 		}
 	}
