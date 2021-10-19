@@ -137,6 +137,7 @@ func (e *Executor) RunCLI(name string, args ...string) error {
 
 	if err := cmd.Run(); err != nil {
 		e.Error(err, "running CLI step", "stderr", stderr.String())
+		return err
 	}
 
 	return nil
