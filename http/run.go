@@ -317,7 +317,7 @@ func (s *Server) getPlanFile(w http.ResponseWriter, r *http.Request, runID strin
 // that can be marshalled into a JSON-API object
 func RunJSONAPIObject(req *http.Request, r *otf.Run) *Run {
 	result := &Run{
-		ID: r.ID,
+		ID: r.String(),
 		Actions: &RunActions{
 			IsCancelable:      r.IsCancelable(),
 			IsConfirmable:     r.IsConfirmable(),

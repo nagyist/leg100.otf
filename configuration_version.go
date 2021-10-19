@@ -3,6 +3,7 @@ package otf
 import (
 	"context"
 	"errors"
+	"fmt"
 )
 
 const (
@@ -35,9 +36,9 @@ type ConfigurationSource string
 // Terraform configuration in  A workspace must have at least one
 // configuration version before any runs may be queued on it.
 type ConfigurationVersion struct {
-	ID string `db:"external_id" jsonapi:"primary,configuration-versions"`
+	ID string `db:"configuration_version_id" jsonapi:"primary,configuration-versions"`
 
-	Model
+	Timestamps
 
 	AutoQueueRuns    bool
 	Source           ConfigurationSource
@@ -115,11 +116,17 @@ type ConfigurationVersionFactory struct {
 	WorkspaceService WorkspaceService
 }
 
+func (cv *ConfigurationVersion) GetID() string { return cv.ID }
+
+func (cv *ConfigurationVersion) String() string {
+	return fmt.Sprintf("cv-%s", cv.ID)
+}
+
 // NewConfigurationVersion creates a ConfigurationVersion object from scratch
 func (f *ConfigurationVersionFactory) NewConfigurationVersion(workspaceID string, opts ConfigurationVersionCreateOptions) (*ConfigurationVersion, error) {
 	cv := ConfigurationVersion{
-		ID:            GenerateID("cv"),
-		Model:         NewModel(),
+		ID:            NewID("cv"),
+		Timestamps:    NewTimestamps(),
 		AutoQueueRuns: DefaultAutoQueueRuns,
 		Status:        ConfigurationPending,
 		Source:        DefaultConfigurationSource,

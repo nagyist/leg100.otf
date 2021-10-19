@@ -81,8 +81,8 @@ func (s *Server) GetApplyLogs(w http.ResponseWriter, r *http.Request) {
 // JSON-API object
 func ApplyJSONAPIObject(req *http.Request, a *otf.Apply) *Apply {
 	obj := &Apply{
-		ID:                   a.ID,
-		LogReadURL:           buildAbsoluteURI(req, fmt.Sprintf(string(GetApplyLogsRoute), a.ID)),
+		ID:                   a.String(),
+		LogReadURL:           buildAbsoluteURI(req, fmt.Sprintf(string(GetApplyLogsRoute), a.String())),
 		ResourceAdditions:    a.ResourceAdditions,
 		ResourceChanges:      a.ResourceChanges,
 		ResourceDestructions: a.ResourceDestructions,
