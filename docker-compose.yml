@@ -1,0 +1,18 @@
+version: "3.9"
+services:
+  otfd:
+    build:
+      context: .
+      dockerfile: _build/Dockerfile
+    depends_on:
+      - postgres
+    environment:
+      OTF_DATABASE: postgres://postgres:postgres@postgres/postgres?sslmode=disable
+    ports:
+      - "8080:8080"
+  postgres:
+    environment:
+      POSTGRES_PASSWORD: postgres
+    image: "postgres"
+    ports:
+      - 5432
