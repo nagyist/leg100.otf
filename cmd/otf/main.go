@@ -10,11 +10,12 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/charmbracelet/bubbles/list"
+	"github.com/charmbracelet/bubbles/paginator"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 )
 
-var docStyle = lipgloss.NewStyle().Margin(1, 2)
+var docStyle = lipgloss.NewStyle().Margin(0, 0)
 
 var items = []list.Item{
 	item{title: "Raspberry Pi’s", desc: "I have ’em all over my house"},
@@ -102,6 +103,7 @@ func Run(ctx context.Context, args []string) error {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			m := model{list: list.NewModel(items, list.NewDefaultDelegate(), 0, 0)}
 			m.list.Title = "My Fave Things"
+			m.list.Paginator.Type = paginator.Arabic
 
 			p := tea.NewProgram(m)
 			p.EnterAltScreen()
