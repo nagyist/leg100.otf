@@ -4,6 +4,9 @@ go 1.16
 
 require (
 	github.com/Masterminds/squirrel v1.5.0
+	github.com/charmbracelet/bubbles v0.9.0
+	github.com/charmbracelet/bubbletea v0.19.0
+	github.com/charmbracelet/lipgloss v0.4.0
 	github.com/go-logr/logr v1.0.0
 	github.com/google/go-cmp v0.5.6 // indirect
 	github.com/google/uuid v1.3.0
@@ -19,7 +22,7 @@ require (
 	github.com/leg100/jsonapi v1.0.1-0.20210703183827-d0513d61dc3f
 	github.com/leg100/zerologr v0.0.0-20210805173127-2e0b118333c5
 	github.com/lib/pq v1.10.3
-	github.com/mattn/go-isatty v0.0.3
+	github.com/mattn/go-isatty v0.0.13
 	github.com/mitchellh/copystructure v1.2.0
 	github.com/mitchellh/go-homedir v1.1.0
 	github.com/niemeyer/pretty v0.0.0-20200227124842-a10e7caefd8e // indirect
