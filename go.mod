@@ -25,6 +25,7 @@ require (
 	github.com/mattn/go-isatty v0.0.13
 	github.com/mitchellh/copystructure v1.2.0
 	github.com/mitchellh/go-homedir v1.1.0
+	github.com/muesli/termenv v0.9.0
 	github.com/niemeyer/pretty v0.0.0-20200227124842-a10e7caefd8e // indirect
 	github.com/pressly/goose/v3 v3.1.0
 	github.com/rs/zerolog v1.23.0

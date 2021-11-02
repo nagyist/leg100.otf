@@ -17,8 +17,10 @@ import (
 
 var docStyle = lipgloss.NewStyle().Margin(0, 0)
 
+var colorBGFG = os.Getenv("COLORFGBG")
+
 var items = []list.Item{
-	item{title: "Raspberry Pi’s", desc: "I have ’em all over my house"},
+	item{title: colorBGFG, desc: "I have ’em all over my house"},
 	item{title: "Nutella", desc: "It's good on toast"},
 	item{title: "Bitter melon", desc: "It cools you down"},
 	item{title: "Nice socks", desc: "And by that I mean socks without holes"},
