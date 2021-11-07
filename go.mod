@@ -4,6 +4,8 @@ go 1.16
 
 require (
 	github.com/Masterminds/squirrel v1.5.0
+	github.com/acarl005/stripansi v0.0.0-20180116102854-5a71ef0e047d
+	github.com/allegro/bigcache v1.2.1
 	github.com/charmbracelet/bubbles v0.9.0
 	github.com/charmbracelet/bubbletea v0.19.0
 	github.com/charmbracelet/lipgloss v0.4.0
@@ -24,8 +26,6 @@ require (
 	github.com/lib/pq v1.10.3
 	github.com/mattn/go-isatty v0.0.13
 	github.com/mitchellh/copystructure v1.2.0
-	github.com/mitchellh/go-homedir v1.1.0
-	github.com/muesli/termenv v0.9.0
 	github.com/niemeyer/pretty v0.0.0-20200227124842-a10e7caefd8e // indirect
 	github.com/pressly/goose/v3 v3.1.0
 	github.com/rs/zerolog v1.23.0

@@ -87,15 +87,11 @@ func (p *Plan) Do(run *Run, env Environment) error {
 		return err
 	}
 
-	if err := env.RunCLI("terraform", "plan", "-no-color", fmt.Sprintf("-out=%s", PlanFilename)); err != nil {
+	if err := env.RunCLI("terraform", "plan", fmt.Sprintf("-out=%s", PlanFilename)); err != nil {
 		return err
 	}
 
 	if err := env.RunCLI("sh", "-c", fmt.Sprintf("terraform show -json %s > %s", PlanFilename, JSONPlanFilename)); err != nil {
-		return err
-	}
-
-	if err := env.RunFunc(run.uploadPlan); err != nil {
 		return err
 	}
 
@@ -142,8 +138,7 @@ func (p *Plan) Start(run *Run) error {
 // Finish updates the run to reflect its plan having finished. An event is
 // returned reflecting the run's new status.
 func (p *Plan) Finish(run *Run) (*Event, error) {
-	// Speculative plan, proceed no further
-	if run.ConfigurationVersion.Speculative {
+	if !p.HasChanges() || run.IsSpeculative() {
 		run.UpdateStatus(RunPlannedAndFinished)
 		return &Event{Payload: run, Type: EventRunPlannedAndFinished}, nil
 	}

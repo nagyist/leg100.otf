@@ -291,7 +291,9 @@ func (s *Server) GetRunLogs(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "text/plain;charset=UTF-8")
 
-	if _, err := io.Copy(w, logs); err != nil {
+	// Strip ANSI code codes because a web browser doesn't know how to interpret
+	// them.
+	if _, err := io.Copy(w, NewAnsiStripper(logs)); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}

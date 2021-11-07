@@ -19,17 +19,20 @@ type RunService struct {
 	planLogs  otf.ChunkStore
 	applyLogs otf.ChunkStore
 
+	cache otf.Cache
+
 	logr.Logger
 
 	*otf.RunFactory
 }
 
-func NewRunService(db otf.RunStore, logger logr.Logger, wss otf.WorkspaceService, cvs otf.ConfigurationVersionService, es otf.EventService, planLogs, applyLogs otf.ChunkStore) *RunService {
+func NewRunService(db otf.RunStore, logger logr.Logger, wss otf.WorkspaceService, cvs otf.ConfigurationVersionService, es otf.EventService, planLogs, applyLogs otf.ChunkStore, cache otf.Cache) *RunService {
 	return &RunService{
 		db:        db,
 		es:        es,
 		planLogs:  planLogs,
 		applyLogs: applyLogs,
+		cache:     cache,
 		Logger:    logger,
 		RunFactory: &otf.RunFactory{
 			WorkspaceService:            wss,
@@ -196,35 +199,17 @@ func (s RunService) UploadPlanFile(ctx context.Context, id string, plan []byte, 
 
 // GetLogs gets the logs for a run, combining the logs of both its plan and
 // apply.
-func (s RunService) GetLogs(ctx context.Context, id string) (io.ReadCloser, error) {
+func (s RunService) GetLogs(ctx context.Context, id string) (io.Reader, error) {
 	run, err := s.Get(id)
 	if err != nil {
 		s.Error(err, "getting run for reading logs", "id", id)
 		return nil, err
 	}
 
-	r, w := io.Pipe()
+	streamer := otf.NewRunStreamer(run, s.planLogs, s.applyLogs, time.Millisecond*500)
+	go streamer.Stream(ctx)
 
-	// Stream logs in background routine
-	go func() {
-		defer w.Close()
-
-		// Get plan logs
-		if err := otf.Stream(ctx, run.Plan.ID, s.planLogs, w, time.Second, otf.ChunkMaxLimit); err != nil {
-			s.Error(err, "retrieving plan logs")
-			w.Write([]byte("unable to retrieve plan logs: " + err.Error()))
-			return
-		}
-
-		// ...and then apply logs
-		if err := otf.Stream(ctx, run.Apply.ID, s.applyLogs, w, time.Second, otf.ChunkMaxLimit); err != nil {
-			s.Error(err, "retrieving apply logs")
-			w.Write([]byte("unable to retrieve apply logs: " + err.Error()))
-			return
-		}
-	}()
-
-	return r, nil
+	return streamer, nil
 }
 
 // GetPlanFile returns the plan file in json format for the run.
@@ -260,6 +245,10 @@ func (s RunService) putBinaryPlanFile(ctx context.Context, id string, plan []byt
 		return err
 	}
 
+	if err := s.cache.Set(otf.BinaryPlanCacheKey(id), plan); err != nil {
+		return fmt.Errorf("caching plan: %w", err)
+	}
+
 	s.V(0).Info("uploaded binary plan file", "id", id)
 
 	return nil
@@ -274,6 +263,10 @@ func (s RunService) putJSONPlanFile(ctx context.Context, id string, plan []byte)
 	if err != nil {
 		s.Error(err, "uploading json plan file", "id", id)
 		return err
+	}
+
+	if err := s.cache.Set(otf.JSONPlanCacheKey(id), plan); err != nil {
+		return fmt.Errorf("caching plan: %w", err)
 	}
 
 	s.V(0).Info("uploaded json plan file", "id", id)
