@@ -21,10 +21,14 @@ func run() error {
 
 	cmd := exec.CommandContext(ctx, "htop")
 	cmd.Stdout = os.Stdout
-	cmd.Stdin = os.Stdout
+	cmd.Stdin = os.Stdin
 	cmd.Stderr = os.Stderr
 
-	return cmd.Run()
+	if err := cmd.Run(); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func handleExitCode(err error) {
