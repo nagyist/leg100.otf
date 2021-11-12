@@ -1,5 +1,7 @@
 package http
 
+import "net/http"
+
 // User represents a Terraform Enterprise user.
 type User struct {
 	ID               string     `jsonapi:"primary,users"`
@@ -19,4 +21,14 @@ type User struct {
 type TwoFactor struct {
 	Enabled  bool `jsonapi:"attr,enabled"`
 	Verified bool `jsonapi:"attr,verified"`
+}
+
+func (s *Server) ListTokens(w http.ResponseWriter, r *http.Request) {
+	tl, err := s.UserService.ListTokens(r.Context())
+	if err != nil {
+		WriteError(w, http.StatusNotFound, err)
+		return
+	}
+
+	WriteResponse(w, r, RunJSONAPIObject(r, obj))
 }
