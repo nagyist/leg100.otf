@@ -1,8 +1,9 @@
 -- +goose Up
 CREATE TABLE IF NOT EXISTS tokens (
+    token_id text,
     created_at timestamptz,
     updated_at timestamptz,
-    id text,
+    description text,
     PRIMARY KEY (id)
 );
 

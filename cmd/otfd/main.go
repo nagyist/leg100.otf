@@ -115,6 +115,7 @@ func main() {
 	stateVersionStore := sql.NewStateVersionDB(db)
 	runStore := sql.NewRunDB(db)
 	configurationVersionStore := sql.NewConfigurationVersionDB(db)
+	tokenStore := sql.NewTokenDB(db)
 	eventService := inmem.NewEventService(logger)
 
 	planLogStore, err := inmem.NewChunkProxy(cache, sql.NewPlanLogDB(db))
@@ -134,6 +135,7 @@ func main() {
 	server.RunService = app.NewRunService(runStore, logger, server.WorkspaceService, server.ConfigurationVersionService, eventService, planLogStore, applyLogStore, cache)
 	server.PlanService = app.NewPlanService(runStore, planLogStore, logger, eventService, cache)
 	server.ApplyService = app.NewApplyService(runStore, applyLogStore, logger, eventService, cache)
+	server.TokenService = app.NewTokenService(tokenStore, logger)
 	server.EventService = eventService
 	server.CacheService = cache
 

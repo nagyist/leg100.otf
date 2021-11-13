@@ -24,7 +24,7 @@ type TwoFactor struct {
 }
 
 func (s *Server) ListTokens(w http.ResponseWriter, r *http.Request) {
-	tl, err := s.UserService.ListTokens(r.Context())
+	tokens, err := s.TokenService.List(r.Context())
 	if err != nil {
 		WriteError(w, http.StatusNotFound, err)
 		return

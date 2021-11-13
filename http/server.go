@@ -53,6 +53,7 @@ type Server struct {
 	RunService                  otf.RunService
 	PlanService                 otf.PlanService
 	ApplyService                otf.ApplyService
+	TokenService                otf.TokenService
 	CacheService                *bigcache.BigCache
 }
 
