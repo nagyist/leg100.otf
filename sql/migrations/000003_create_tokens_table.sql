@@ -4,7 +4,7 @@ CREATE TABLE IF NOT EXISTS tokens (
     created_at timestamptz,
     updated_at timestamptz,
     description text,
-    PRIMARY KEY (id)
+    PRIMARY KEY (token_id)
 );
 
 -- +goose Down

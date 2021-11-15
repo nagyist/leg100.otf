@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>oTF</title>
+</head>
+<body>
+    <h1>Tokens</h1>
+    <p>one thing</p> <p>two thing</p>
+    <form action="/app/settings/tokens", method="POST">
+        <button>Create token</button>
+        <input type="text" name="description" required>
+    </form>
+    <ul>
+    {{ range .Tokens }}
+        <li>
+            <span>{{ .Description }}</span>
+                <form style="display: inline-block;" action="/app/settings/tokens/delete", method="POST">
+                <button>Delete</button>
+                <button>Delete</button>
+                <input type="hidden" name="id" value="{{ .ID }}" required>
+                </form>
+        </li>
+    {{ else }}
+        <div><strong>No tokens</strong></div>
+    {{ end }}
+    <ul>
+</div>
+</body>
+</html>

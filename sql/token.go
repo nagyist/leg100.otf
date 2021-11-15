@@ -25,7 +25,7 @@ func NewTokenDB(db *sqlx.DB) *TokenDB {
 func (db TokenDB) Create(ctx context.Context, token otf.Token) error {
 	sql, args, err := psql.
 		Insert("tokens").
-		Columns("id", "created_at", "updated_at", "description").
+		Columns("token_id", "created_at", "updated_at", "description").
 		Values(token.ID, token.CreatedAt, token.UpdatedAt, token.Description).
 		ToSql()
 	if err != nil {
@@ -41,7 +41,7 @@ func (db TokenDB) Create(ctx context.Context, token otf.Token) error {
 }
 
 func (db TokenDB) List(ctx context.Context) ([]*otf.Token, error) {
-	selectBuilder := psql.Select().From("tokens")
+	selectBuilder := psql.Select("*").From("tokens")
 
 	sql, args, err := selectBuilder.ToSql()
 	if err != nil {
@@ -75,7 +75,7 @@ func (db TokenDB) Get(ctx context.Context, id string) (*otf.Token, error) {
 // Delete deletes a token from the DB
 func (db TokenDB) Delete(ctx context.Context, id string) error {
 	var deleted string
-	if err := db.GetContext(ctx, &deleted, "DELETE FROM tokens WHERE token_id = $1 RETURNING id", id); err != nil {
+	if err := db.GetContext(ctx, &deleted, "DELETE FROM tokens WHERE token_id = $1 RETURNING token_id", id); err != nil {
 		return fmt.Errorf("unable to delete token: %w", err)
 	}
 
