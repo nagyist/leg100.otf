@@ -17,6 +17,8 @@ func init() {
 	var err error
 	BuiltInt, err = strconv.Atoi(Built)
 	if err != nil {
-		panic("unable to convert build-time variable Built into integer")
+		// On error just set to 0 (so we can run can continue to run go build
+		// without -ldflags)
+		BuiltInt = 0
 	}
 }

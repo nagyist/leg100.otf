@@ -1,40 +1,11 @@
 package http
 
 import (
-	"embed"
 	"fmt"
 	"net/http"
-	"os"
-	"path/filepath"
-	"text/template"
 
 	"github.com/leg100/otf"
 )
-
-var (
-	//go:embed static
-	static embed.FS
-
-	templatesGlob = "static/templates/*.tmpl"
-
-	tmpl = template.Must(template.ParseFS(static, templatesGlob))
-)
-
-func getTemplate() *template.Template {
-	if os.Getenv("OTF_DEBUG") == "true" {
-		return template.Must(template.ParseGlob(filepath.Join("http", templatesGlob)))
-	}
-
-	return tmpl
-}
-
-func cssFilesystem() http.FileSystem {
-	if os.Getenv("OTF_DEBUG") == "true" {
-		return http.Dir(http.StripPrefix"http/static/css")
-	}
-
-	return http.FS(static)
-}
 
 // User represents a Terraform Enterprise user.
 type User struct {
@@ -52,7 +23,8 @@ type User struct {
 }
 
 type ListTokenOutput struct {
-	Tokens []*otf.Token
+	Tokens  []*otf.Token
+	Flashes []string
 }
 
 // TwoFactor represents the organization permissions.
@@ -68,13 +40,20 @@ func (s *Server) CreateToken(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_, err := s.TokenService.Create(r.Context(), otf.TokenCreateOptions{Description: desc})
+	token, err := s.TokenService.Create(r.Context(), otf.TokenCreateOptions{Description: desc})
 	if err != nil {
 		WriteError(w, http.StatusNotFound, err)
 		return
 	}
 
+	session, _ := store.Get(r, "fmessages")
+	session.AddFlash(fmt.Sprintf("created token: %s", token))
+	if err := session.Save(r, w); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
 	http.Redirect(w, r, "/app/settings/tokens", http.StatusMovedPermanently)
+
 }
 
 func (s *Server) ListTokens(w http.ResponseWriter, r *http.Request) {
@@ -84,7 +63,18 @@ func (s *Server) ListTokens(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := getTemplate().Execute(w, ListTokenOutput{Tokens: tokens}); err != nil {
+	session, _ := store.Get(r, "fmessages")
+
+	flashes := session.Flashes()
+
+	output := ListTokenOutput{
+		Tokens:  tokens,
+		Flashes: interfaceSliceToStringSlice(flashes),
+	}
+
+	session.Save(r, w)
+
+	if err := s.GetTemplates().Execute(w, output); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
 }
@@ -101,5 +91,19 @@ func (s *Server) DeleteToken(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	session, _ := store.Get(r, "fmessages")
+	session.AddFlash("deleted token")
+	if err := session.Save(r, w); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
 	http.Redirect(w, r, "/app/settings/tokens", http.StatusMovedPermanently)
+}
+
+func interfaceSliceToStringSlice(is []interface{}) (ss []string) {
+	for _, i := range is {
+		ss = append(ss, i.(string))
+	}
+	return ss
 }

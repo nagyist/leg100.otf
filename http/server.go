@@ -10,6 +10,7 @@ import (
 	"github.com/allegro/bigcache"
 	"github.com/go-logr/logr"
 	"github.com/gorilla/mux"
+	"github.com/gorilla/sessions"
 	"github.com/leg100/jsonapi"
 	"github.com/leg100/otf"
 	"github.com/urfave/negroni"
@@ -26,6 +27,8 @@ const (
 	GetPlanLogsRoute                WebRoute = "plans/%v/logs"
 	GetApplyLogsRoute               WebRoute = "applies/%v/logs"
 )
+
+var store = sessions.NewCookieStore([]byte("a-random-key"))
 
 type WebRoute string
 
@@ -55,6 +58,8 @@ type Server struct {
 	ApplyService                otf.ApplyService
 	TokenService                otf.TokenService
 	CacheService                *bigcache.BigCache
+
+	AssetServer
 }
 
 // NewServer is the constructor for Server
@@ -87,7 +92,7 @@ func NewRouter(server *Server) *negroni.Negroni {
 	router.HandleFunc("/app/settings/tokens", server.CreateToken).Methods("POST")
 	router.HandleFunc("/app/settings/tokens/delete", server.DeleteToken).Methods("POST")
 	router.HandleFunc("/healthz", server.Healthz).Methods("GET")
-	router.Handle("/css", http.FileServer(cssFilesystem())).Methods("GET")
+	router.PathPrefix("/static/").Handler(http.FileServer(server.GetStaticFS())).Methods("GET")
 
 	router.HandleFunc("/app/{org}/{workspace}/runs/{id}", server.GetRunLogs).Methods("GET")
 

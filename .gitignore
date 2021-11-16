@@ -1,5 +1,6 @@
 # modd
 modd.conf
+modd-*.conf
 # logs
 *.log
 # keys,certs

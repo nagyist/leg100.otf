@@ -51,6 +51,7 @@ func main() {
 	}
 
 	var help bool
+	var devMode bool
 
 	// Toggle log colors. Must be one of auto, true, or false.
 	var logColor string
@@ -65,6 +66,7 @@ func main() {
 	cmd.Flags().IntVar(&cacheConfig.Size, "cache-size", 0, "Maximum cache size in MB. 0 means unlimited size.")
 	cmd.Flags().DurationVar(&cacheConfig.TTL, "cache-expiry", otf.DefaultCacheTTL, "Cache entry TTL.")
 	cmd.Flags().BoolVarP(&help, "help", "h", false, "Print usage information")
+	cmd.Flags().BoolVar(&devMode, "dev-mode", false, "Enable developer mode.")
 	logLevel := cmd.Flags().StringP("log-level", "l", DefaultLogLevel, "Logging level")
 
 	cmdutil.SetFlagsFromEnvVariables(cmd.Flags())
@@ -138,6 +140,13 @@ func main() {
 	server.TokenService = app.NewTokenService(tokenStore, logger)
 	server.EventService = eventService
 	server.CacheService = cache
+
+	if devMode {
+		server.AssetServer = &http.DevAssetServer{}
+		logger.Info("enabled developer mode")
+	} else {
+		server.AssetServer = &http.EmbeddedAssetServer{}
+	}
 
 	scheduler, err := inmem.NewScheduler(server.WorkspaceService, server.RunService, eventService, logger)
 	if err != nil {
