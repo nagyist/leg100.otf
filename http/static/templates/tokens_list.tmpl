@@ -1,12 +1,4 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="utf-8">
-  <title>oTF</title>
-  <link rel="stylesheet" href="/static/css/normalize.css">
-  <link rel="stylesheet" href="/static/css/main.css">
-</head>
-<body>
+{{ define "body" }}
     <h1>API Tokens</h1>
 
     {{ range .Flashes }}
@@ -30,6 +22,4 @@
         <div><strong>No tokens</strong></div>
     {{ end }}
     <ul>
-</div>
-</body>
-</html>
+{{ end }}

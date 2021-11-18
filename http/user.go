@@ -74,7 +74,7 @@ func (s *Server) ListTokens(w http.ResponseWriter, r *http.Request) {
 
 	session.Save(r, w)
 
-	if err := s.GetTemplates().Execute(w, output); err != nil {
+	if err := s.GetTemplates().ExecuteTemplate(w, "list_tokens", output); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
 }
