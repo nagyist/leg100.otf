@@ -2,6 +2,7 @@ package http
 
 import (
 	"embed"
+	"fmt"
 	"net/http"
 	"path/filepath"
 	"text/template"
@@ -11,23 +12,51 @@ var (
 	//go:embed static
 	static embed.FS
 
-	templatesGlob = "static/templates/*.tmpl"
+	cssDir     = "static/css"
+	layoutPath = "static/templates/layout.tmpl"
+	contentDir = "static/templates/content"
 
-	templates = template.Must(template.ParseFS(static, templatesGlob))
+	templates map[string]*template.Template
 )
+
+// Parse embedded templates at startup
+func init() {
+	entries, err := static.ReadDir(contentDir)
+	if err != nil {
+		panic(fmt.Sprintf("unable to read embedded templates directory: %s", err.Error()))
+	}
+
+	templates = make(map[string]*template.Template, len(entries))
+
+	for _, ent := range entries {
+		if ent.IsDir() {
+			continue
+		}
+
+		contentPath := filepath.Join(contentDir, ent.Name())
+
+		templates[ent.Name()] = template.Must(template.ParseFS(static, layoutPath, contentPath))
+	}
+}
 
 // AssetServer provides the means to retrieve http assets (templates and static
 // files such as CSS).
 type AssetServer interface {
-	GetTemplates() *template.Template
+	GetTemplate(string) *template.Template
 	GetStaticFS() http.FileSystem
 }
 
 // EmbeddedAssetServer embeds assets within the go binary (the default).
-type EmbeddedAssetServer struct{}
+type EmbeddedAssetServer struct {
+	templates map[string]*template.Template
+}
 
-func (s *EmbeddedAssetServer) GetTemplates() *template.Template {
-	return templates
+func NewEmbeddedAssetServer() *EmbeddedAssetServer {
+	return &EmbeddedAssetServer{templates: templates}
+}
+
+func (s *EmbeddedAssetServer) GetTemplate(name string) *template.Template {
+	return s.templates[name]
 }
 
 func (s *EmbeddedAssetServer) GetStaticFS() http.FileSystem {
@@ -38,8 +67,11 @@ func (s *EmbeddedAssetServer) GetStaticFS() http.FileSystem {
 // something like livereload to see changes in real-time.
 type DevAssetServer struct{}
 
-func (s *DevAssetServer) GetTemplates() *template.Template {
-	return template.Must(template.ParseGlob(filepath.Join("http", templatesGlob)))
+func (s *DevAssetServer) GetTemplate(name string) *template.Template {
+	layoutPath := filepath.Join("http", layoutPath)
+	contentPath := filepath.Join("http", contentDir, name)
+
+	return template.Must(template.ParseFiles(layoutPath, contentPath))
 }
 
 func (s *DevAssetServer) GetStaticFS() http.FileSystem {

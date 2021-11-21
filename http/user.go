@@ -23,8 +23,9 @@ type User struct {
 }
 
 type ListTokenOutput struct {
-	Tokens  []*otf.Token
-	Flashes []string
+	Stylesheets []string
+	Tokens      []*otf.Token
+	Flashes     []string
 }
 
 // TwoFactor represents the organization permissions.
@@ -63,18 +64,16 @@ func (s *Server) ListTokens(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	session, _ := store.Get(r, "fmessages")
-
-	flashes := session.Flashes()
+	session, _ := store.Get(r, "flash")
 
 	output := ListTokenOutput{
 		Tokens:  tokens,
-		Flashes: interfaceSliceToStringSlice(flashes),
+		Flashes: interfaceSliceToStringSlice(session.Flashes()),
 	}
 
 	session.Save(r, w)
 
-	if err := s.GetTemplates().ExecuteTemplate(w, "list_tokens", output); err != nil {
+	if err := s.GetTemplate("tokens_list.tmpl").Execute(w, output); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
 }
@@ -91,7 +90,7 @@ func (s *Server) DeleteToken(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	session, _ := store.Get(r, "fmessages")
+	session, _ := store.Get(r, "flash")
 	session.AddFlash("deleted token")
 	if err := session.Save(r, w); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)

@@ -145,7 +145,7 @@ func main() {
 		server.AssetServer = &http.DevAssetServer{}
 		logger.Info("enabled developer mode")
 	} else {
-		server.AssetServer = &http.EmbeddedAssetServer{}
+		server.AssetServer = http.NewEmbeddedAssetServer()
 	}
 
 	scheduler, err := inmem.NewScheduler(server.WorkspaceService, server.RunService, eventService, logger)
