@@ -22,10 +22,17 @@ type User struct {
 	// AuthenticationTokens *AuthenticationTokens `jsonapi:"relation,authentication-tokens"`
 }
 
-type ListTokenOutput struct {
-	Stylesheets []string
-	Tokens      []*otf.Token
-	Flashes     []string
+type TokenListTemplateOptions struct {
+	LayoutTemplateOptions
+
+	Tokens []*otf.Token
+}
+
+func NewTokenListTemplateOptions(server AssetServer, r *http.Request, w http.ResponseWriter, tokens []*otf.Token) TokenListTemplateOptions {
+	return TokenListTemplateOptions{
+		LayoutTemplateOptions: NewLayoutTemplateOptions(server, r, w),
+		Tokens:                tokens,
+	}
 }
 
 // TwoFactor represents the organization permissions.
@@ -64,16 +71,9 @@ func (s *Server) ListTokens(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	session, _ := store.Get(r, "flash")
+	opts := NewTokenListTemplateOptions(s.AssetServer, r, w, tokens)
 
-	output := ListTokenOutput{
-		Tokens:  tokens,
-		Flashes: interfaceSliceToStringSlice(session.Flashes()),
-	}
-
-	session.Save(r, w)
-
-	if err := s.GetTemplate("tokens_list.tmpl").Execute(w, output); err != nil {
+	if err := s.GetTemplate("tokens_list.tmpl").Execute(w, opts); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
 }

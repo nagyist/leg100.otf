@@ -39,6 +39,20 @@ func init() {
 	}
 }
 
+type LayoutTemplateOptions struct {
+	Stylesheets   []string
+	FlashMessages []string
+}
+
+func NewLayoutTemplateOptions(server AssetServer, r *http.Request, w http.ResponseWriter) LayoutTemplateOptions {
+	session, _ := store.Get(r, "flash")
+	session.Save(r, w)
+
+	return LayoutTemplateOptions{
+		FlashMessages: interfaceSliceToStringSlice(session.Flashes()),
+	}
+}
+
 // AssetServer provides the means to retrieve http assets (templates and static
 // files such as CSS).
 type AssetServer interface {
