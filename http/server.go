@@ -27,6 +27,8 @@ const (
 	UploadConfigurationVersionRoute WebRoute = "/configuration-versions/%v/upload"
 	GetPlanLogsRoute                WebRoute = "plans/%v/logs"
 	GetApplyLogsRoute               WebRoute = "applies/%v/logs"
+
+	FlashKey = "flash"
 )
 
 var (
@@ -108,7 +110,7 @@ func NewRouter(server *Server) *negroni.Negroni {
 	router.HandleFunc("/app/settings/tokens", server.CreateToken).Methods("POST")
 	router.HandleFunc("/app/settings/tokens/delete", server.DeleteToken).Methods("POST")
 	router.HandleFunc("/healthz", server.Healthz).Methods("GET")
-	router.PathPrefix("/static/").Handler(http.FileServer(server.GetStaticFS())).Methods("GET")
+	router.PathPrefix("/static/").Handler(http.StripPrefix("/static", http.FileServer(server.GetStaticFS()))).Methods("GET")
 
 	router.HandleFunc("/app/{org}/{workspace}/runs/{id}", server.GetRunLogs).Methods("GET")
 
@@ -238,6 +240,24 @@ func (s *Server) Close() error {
 	ctx, cancel := context.WithTimeout(context.Background(), ShutdownTimeout)
 	defer cancel()
 	return s.server.Shutdown(ctx)
+}
+
+func (s *Server) SetFlashMessage(w http.ResponseWriter, r *http.Request, msg string) error {
+	session, _ := store.Get(r, FlashKey)
+	session.AddFlash(msg)
+
+	if err := session.Save(r, w); err != nil {
+		return fmt.Errorf("unable to save flash message: %w", err)
+	}
+
+	return nil
+}
+
+func (s *Server) GetFlashMessages(w http.ResponseWriter, r *http.Request) []string {
+	session, _ := store.Get(r, FlashKey)
+	session.Save(r, w)
+
+	return interfaceSliceToStringSlice(session.Flashes(FlashKey))
 }
 
 // NewLogHandler returns negroni middleware that logs HTTP requests

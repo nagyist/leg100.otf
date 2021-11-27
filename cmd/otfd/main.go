@@ -11,6 +11,7 @@ import (
 	"github.com/leg100/otf/app"
 	cmdutil "github.com/leg100/otf/cmd"
 	"github.com/leg100/otf/http"
+	"github.com/leg100/otf/http/assets"
 	"github.com/leg100/otf/inmem"
 	"github.com/leg100/otf/sql"
 	"github.com/leg100/zerologr"
@@ -142,10 +143,8 @@ func main() {
 	server.CacheService = cache
 
 	if devMode {
-		server.AssetServer = &http.DevAssetServer{}
+		server.Server = assets.NewDevServer()
 		logger.Info("enabled developer mode")
-	} else {
-		server.AssetServer = http.NewEmbeddedAssetServer()
 	}
 
 	scheduler, err := inmem.NewScheduler(server.WorkspaceService, server.RunService, eventService, logger)

@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/leg100/otf"
+	"github.com/leg100/otf/http/assets"
 )
 
 // User represents a Terraform Enterprise user.
@@ -23,16 +24,9 @@ type User struct {
 }
 
 type TokenListTemplateOptions struct {
-	LayoutTemplateOptions
+	assets.LayoutTemplateOptions
 
 	Tokens []*otf.Token
-}
-
-func NewTokenListTemplateOptions(server AssetServer, r *http.Request, w http.ResponseWriter, tokens []*otf.Token) TokenListTemplateOptions {
-	return TokenListTemplateOptions{
-		LayoutTemplateOptions: NewLayoutTemplateOptions(server, r, w),
-		Tokens:                tokens,
-	}
 }
 
 // TwoFactor represents the organization permissions.
@@ -54,12 +48,11 @@ func (s *Server) CreateToken(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	session, _ := store.Get(r, "fmessages")
-	session.AddFlash(fmt.Sprintf("created token: %s", token))
-	if err := session.Save(r, w); err != nil {
+	if err := s.SetFlashMessage(w, r, fmt.Sprintf("created token: %s", token)); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+
 	http.Redirect(w, r, "/app/settings/tokens", http.StatusMovedPermanently)
 
 }
@@ -71,10 +64,20 @@ func (s *Server) ListTokens(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	opts := NewTokenListTemplateOptions(s.AssetServer, r, w, tokens)
+	opts := TokenListTemplateOptions{
+		Tokens:                tokens,
+		LayoutTemplateOptions: s.NewLayoutTemplateOptions(w, r),
+	}
 
 	if err := s.GetTemplate("tokens_list.tmpl").Execute(w, opts); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+}
+
+func (s *Server) NewLayoutTemplateOptions(w http.ResponseWriter, r *http.Request) assets.LayoutTemplateOptions {
+	return assets.LayoutTemplateOptions{
+		FlashMessages: s.GetFlashMessages(w, r),
+		Stylesheets:   s.Links(),
 	}
 }
 
@@ -90,9 +93,7 @@ func (s *Server) DeleteToken(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	session, _ := store.Get(r, "flash")
-	session.AddFlash("deleted token")
-	if err := session.Save(r, w); err != nil {
+	if err := s.SetFlashMessage(w, r, "deleted token"); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}

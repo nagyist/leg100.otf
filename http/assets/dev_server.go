@@ -22,12 +22,12 @@ type DevServer struct {
 	root string
 }
 
-func NewDevServer() (*DevServer, error) {
+func NewDevServer() *DevServer {
 	server := DevServer{
 		root: AssetsDir,
 	}
 
-	return &server, nil
+	return &server
 }
 
 func (s *DevServer) GetTemplate(name string) *template.Template {
