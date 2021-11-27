@@ -1,4 +1,4 @@
-package http
+package assets
 
 import (
 	"crypto/sha256"
@@ -12,16 +12,16 @@ import (
 // returns a list of cache-busting relative URLs for each file. A query string
 // is appended to each path, v=hash, where hash is the SHA256 of the contents of
 // the file.
-func CacheBustingPaths(filesystem fs.FS, pattern string) ([]string, error) {
+func CacheBustingPaths(root fs.FS, pattern string) ([]string, error) {
 	var paths []string
 
-	matches, err := fs.Glob(filesystem, pattern)
+	matches, err := fs.Glob(root, pattern)
 	if err != nil {
 		return nil, err
 	}
 
 	for _, m := range matches {
-		f, err := filesystem.Open(m)
+		f, err := root.Open(m)
 		if err != nil {
 			return nil, err
 		}

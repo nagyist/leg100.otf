@@ -9,29 +9,52 @@ import (
 	"path/filepath"
 )
 
+var (
+	//go:embed css/*
+	//go:embed templates/*
+	embedded embed.FS
+)
+
 // EmbeddedServer provides access to assets embedded in the go binary.
 type EmbeddedServer struct {
 	// templates maps template names to parsed contents
 	templates map[string]*template.Template
+
+	// The embedded filesystem
+	filesystem embed.FS
+
+	// relative paths to stylesheets for use in <link...> tags
+	links []string
 }
 
-func NewEmbeddedServer(filesystem embed.FS, opts ServerOptions) (*EmbeddedServer, error) {
-	pattern := fmt.Sprintf("%s/*.tmpl", opts.ContentPath)
-	paths, err := fs.Glob(filesystem, pattern)
+func NewEmbeddedServer() (*EmbeddedServer, error) {
+	pattern := fmt.Sprintf("%s/*.tmpl", contentTemplatesDir)
+
+	paths, err := fs.Glob(embedded, pattern)
 	if err != nil {
 		return nil, fmt.Errorf("unable to read embedded templates directory: %w", err)
 	}
 
 	server := EmbeddedServer{
-		templates: make(map[string]*template.Template, len(paths)),
+		templates:  make(map[string]*template.Template, len(paths)),
+		filesystem: embedded,
 	}
 
 	for _, p := range paths {
-		contentPath := filepath.Join(contentDir, p.Name())
+		template, err := template.ParseFS(embedded, layoutTemplatePath, p)
+		if err != nil {
+			return nil, fmt.Errorf("unable to parse embedded template: %w", err)
+		}
 
-		templates[p.Name()] = template.Must(template.ParseFS(static, layoutPath, contentPath))
+		server.templates[filepath.Base(p)] = template
 	}
-	return &EmbeddedServer{templates: templates}
+
+	server.links, err = CacheBustingPaths(embedded, filepath.Join(stylesheetDir, "*.css"))
+	if err != nil {
+		return nil, fmt.Errorf("unable to read embedded stylesheets directory: %w", err)
+	}
+
+	return &server, nil
 }
 
 func (s *EmbeddedServer) GetTemplate(name string) *template.Template {
@@ -39,5 +62,9 @@ func (s *EmbeddedServer) GetTemplate(name string) *template.Template {
 }
 
 func (s *EmbeddedServer) GetStaticFS() http.FileSystem {
-	return http.FS(static)
+	return http.FS(s.filesystem)
+}
+
+func (s *EmbeddedServer) Links() []string {
+	return s.links
 }

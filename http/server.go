@@ -13,6 +13,7 @@ import (
 	"github.com/gorilla/sessions"
 	"github.com/leg100/jsonapi"
 	"github.com/leg100/otf"
+	"github.com/leg100/otf/http/assets"
 	"github.com/urfave/negroni"
 )
 
@@ -28,7 +29,21 @@ const (
 	GetApplyLogsRoute               WebRoute = "applies/%v/logs"
 )
 
-var store = sessions.NewCookieStore([]byte("a-random-key"))
+var (
+	store = sessions.NewCookieStore([]byte("a-random-key"))
+
+	embeddedAssetServer assets.Server
+)
+
+// Load embedded templates at startup
+func init() {
+	server, err := assets.NewEmbeddedServer()
+	if err != nil {
+		panic("unable to load embedded assets: " + err.Error())
+	}
+
+	embeddedAssetServer = server
+}
 
 type WebRoute string
 
@@ -59,7 +74,7 @@ type Server struct {
 	TokenService                otf.TokenService
 	CacheService                *bigcache.BigCache
 
-	AssetServer
+	assets.Server
 }
 
 // NewServer is the constructor for Server
@@ -67,6 +82,7 @@ func NewServer() *Server {
 	s := &Server{
 		server: &http.Server{},
 		err:    make(chan error),
+		Server: embeddedAssetServer,
 	}
 
 	return s

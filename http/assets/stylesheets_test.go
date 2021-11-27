@@ -1,4 +1,4 @@
-package http
+package assets
 
 import (
 	"io/fs"
