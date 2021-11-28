@@ -1,12 +1,12 @@
 body {
-    background-color: purple;
-    font-family: sans-serif;
+  background-color: white;
+  font-family: sans-serif;
 }
 
 .wrapper {
-    width: 95%;
-    max-width: 76em;
-    margin: 0 auto;
+  width: 95%;
+  max-width: 76em;
+  margin: 0 auto;
 }
 
 .masthead {
@@ -14,7 +14,8 @@ body {
 }
 .masthead h1 {
   margin: 0;
-  padding: 0.5em 0;
+  padding: 0.2em 0;
   color: #fff;
+  font-size: 2em;
   text-shadow: -.1em .1em 0 rgba(0,0,0,0.3);
 }
