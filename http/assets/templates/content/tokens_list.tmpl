@@ -1,25 +1,25 @@
 {{ define "content" }}
-    <h1>API Tokens</h1>
+  <h1>API Tokens</h1>
 
-    {{ range .FlashMessages }}
-        <p>{{ . }}</p>
-    {{ end }}
+  {{ range .FlashMessages }}
+    <p>{{ . }}</p>
+  {{ end }}
 
-    <form action="/app/settings/tokens", method="POST">
-        <button>Create token</button>
-        <input type="text" name="description" required>
-    </form>
-    <ul>
+  <form action="/app/settings/tokens", method="POST">
+    <button>Create token</button>
+    <input type="text" name="description" required>
+  </form>
+  <ul>
     {{ range .Tokens }}
-        <li>
-            <span>{{ .Description }}</span>
-                <form style="display: inline-block;" action="/app/settings/tokens/delete", method="POST">
-                <button>Delete</button>
-                <input type="hidden" name="id" value="{{ .ID }}" required>
-                </form>
-        </li>
+      <li>
+        <span>{{ .Description }}</span>
+        <form style="display: inline-block;" action="/app/settings/tokens/delete", method="POST">
+          <button>Delete</button>
+          <input type="hidden" name="id" value="{{ .ID }}" required>
+        </form>
+      </li>
     {{ else }}
-        <div><strong>No tokens</strong></div>
+      <div><strong>No tokens</strong></div>
     {{ end }}
-    <ul>
+  <ul>
 {{ end }}
