@@ -38,6 +38,7 @@ type TokenCreateOptions struct {
 func NewToken(opts TokenCreateOptions) (string, Token) {
 	token := Token{
 		ID:          NewID("at"),
+		Timestamps:  NewTimestamps(),
 		Description: opts.Description,
 	}
 

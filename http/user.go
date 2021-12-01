@@ -48,7 +48,7 @@ func (s *Server) CreateToken(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := s.SetFlashMessage(w, r, fmt.Sprintf("created token: %s", token)); err != nil {
+	if err := s.SetFlashMessage(w, r, fmt.Sprintf("Created token: %s", token)); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -93,7 +93,7 @@ func (s *Server) DeleteToken(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := s.SetFlashMessage(w, r, "deleted token"); err != nil {
+	if err := s.SetFlashMessage(w, r, "Deleted token"); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}

@@ -9,17 +9,24 @@
     <button>Create token</button>
     <input type="text" name="description" required>
   </form>
-  <ul>
-    {{ range .Tokens }}
-      <li>
-        <span>{{ .Description }}</span>
-        <form style="display: inline-block;" action="/app/settings/tokens/delete", method="POST">
-          <button>Delete</button>
-          <input type="hidden" name="id" value="{{ .ID }}" required>
-        </form>
-      </li>
-    {{ else }}
-      <div><strong>No tokens</strong></div>
-    {{ end }}
-  <ul>
+  <section class="tokens">
+    <ul>
+      {{ range .Tokens }}
+        <li>
+          <div class="media-left">
+            <span>{{ .Description }}</span>
+          </div>
+          <div class="media-right">
+            <span>{{ .CreatedAt }}</span>
+            <form action="/app/settings/tokens/delete" method="POST">
+              <button class="danger">Delete</button>
+              <input type="hidden" name="id" value="{{ .ID }}" required>
+            </form>
+          </div>
+        </li>
+      {{ else }}
+        <div><strong>No tokens</strong></div>
+      {{ end }}
+    <ul>
+  </section>
 {{ end }}

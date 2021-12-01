@@ -16,6 +16,44 @@ body {
   margin: 0;
   padding: 0.2em 0;
   color: #fff;
-  font-size: 2em;
+  font-size: 1.5em;
   text-shadow: -.1em .1em 0 rgba(0,0,0,0.3);
+}
+
+.tokens ul {
+  display: flex;
+  list-style: none;
+  font-family: Avenir Next;
+  flex-direction: column;
+  padding: 0;
+}
+
+.tokens li {
+  border: 1px solid;
+  padding: 0.7rem;
+  align-items: center;
+  justify-content: center;
+  display: flex;
+  flex-direction: row;
+}
+
+.media-left {
+  flex-grow: 1;
+}
+
+.media-right {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+button {
+  margin: 0 0.5rem 0 0.5rem;
+  border-radius: 2px;
+}
+
+.danger {
+  background-color: #c73445;
+  border-color: #9f2937;
+  color: white;
 }

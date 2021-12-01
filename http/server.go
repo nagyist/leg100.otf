@@ -255,9 +255,13 @@ func (s *Server) SetFlashMessage(w http.ResponseWriter, r *http.Request, msg str
 
 func (s *Server) GetFlashMessages(w http.ResponseWriter, r *http.Request) []string {
 	session, _ := store.Get(r, FlashKey)
+
+	flashes := interfaceSliceToStringSlice(session.Flashes())
+
+	// Having read flashes we can now clear them from the session.
 	session.Save(r, w)
 
-	return interfaceSliceToStringSlice(session.Flashes(FlashKey))
+	return flashes
 }
 
 // NewLogHandler returns negroni middleware that logs HTTP requests
