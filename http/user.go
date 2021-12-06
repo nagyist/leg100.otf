@@ -2,6 +2,7 @@ package http
 
 import (
 	"fmt"
+	"html/template"
 	"net/http"
 
 	"github.com/leg100/otf"
@@ -48,7 +49,7 @@ func (s *Server) CreateToken(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := s.SetFlashMessage(w, r, fmt.Sprintf("Created token: %s", token)); err != nil {
+	if err := s.SetFlashMessage(w, r, fmt.Sprintf("Created token: <code>%s</code>", token)); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -66,7 +67,7 @@ func (s *Server) ListTokens(w http.ResponseWriter, r *http.Request) {
 
 	opts := TokenListTemplateOptions{
 		Tokens:                tokens,
-		LayoutTemplateOptions: s.NewLayoutTemplateOptions(w, r),
+		LayoutTemplateOptions: s.NewLayoutTemplateOptions("Tokens", w, r),
 	}
 
 	if err := s.GetTemplate("tokens_list.tmpl").Execute(w, opts); err != nil {
@@ -74,8 +75,9 @@ func (s *Server) ListTokens(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (s *Server) NewLayoutTemplateOptions(w http.ResponseWriter, r *http.Request) assets.LayoutTemplateOptions {
+func (s *Server) NewLayoutTemplateOptions(title string, w http.ResponseWriter, r *http.Request) assets.LayoutTemplateOptions {
 	return assets.LayoutTemplateOptions{
+		Title:         title,
 		FlashMessages: s.GetFlashMessages(w, r),
 		Stylesheets:   s.Links(),
 	}
@@ -106,4 +108,11 @@ func interfaceSliceToStringSlice(is []interface{}) (ss []string) {
 		ss = append(ss, i.(string))
 	}
 	return ss
+}
+
+func strSliceToHTMLTemplateSlice(s []string) (ht []template.HTML) {
+	for _, i := range s {
+		ht = append(ht, template.HTML(i))
+	}
+	return ht
 }

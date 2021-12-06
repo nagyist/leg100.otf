@@ -1,12 +1,6 @@
 {{ define "content" }}
-    <h1>API Tokens</h1>
-
-    {{ range .Flashes }}
-        <p>{{ . }}</p>
-    {{ end }}
-
-    <form action="/app/settings/tokens", method="POST">
-        <button>Create token</button>
-        <input type="text" name="description" required>
-    </form>
+  <form action="/app/settings/tokens", method="POST">
+    <button>Create token</button>
+    <input type="text" name="description" required>
+  </form>
 {{ end }}

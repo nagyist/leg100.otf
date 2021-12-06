@@ -35,6 +35,12 @@ type TokenCreateOptions struct {
 	Description string `jsonapi:"attr,description"`
 }
 
+// TokenListOptions are the options for listing tokens.
+type TokenListOptions struct {
+	// Optional. Order the listing by a specific field.
+	OrderBy *string
+}
+
 func NewToken(opts TokenCreateOptions) (string, Token) {
 	token := Token{
 		ID:          NewID("at"),

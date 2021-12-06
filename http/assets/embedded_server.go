@@ -7,6 +7,8 @@ import (
 	"io/fs"
 	"net/http"
 	"path/filepath"
+
+	"github.com/Masterminds/sprig"
 )
 
 var (
@@ -40,8 +42,9 @@ func NewEmbeddedServer() (*EmbeddedServer, error) {
 		filesystem: embedded,
 	}
 
+	name := filepath.Base(layoutTemplatePath)
 	for _, p := range paths {
-		template, err := template.ParseFS(embedded, layoutTemplatePath, p)
+		template, err := template.New(name).Funcs(sprig.FuncMap()).ParseFS(embedded, layoutTemplatePath, p)
 		if err != nil {
 			return nil, fmt.Errorf("unable to parse embedded template: %w", err)
 		}

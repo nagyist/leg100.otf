@@ -5,6 +5,8 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+
+	"github.com/Masterminds/sprig"
 )
 
 var (
@@ -34,7 +36,9 @@ func (s *DevServer) GetTemplate(name string) *template.Template {
 	layout := filepath.Join(s.root, layoutTemplatePath)
 	content := filepath.Join(s.root, contentTemplatesDir, name)
 
-	return template.Must(template.ParseFiles(layout, content))
+	return template.Must(
+		template.New(filepath.Base(layout)).Funcs(sprig.FuncMap()).ParseFiles(layout, content),
+	)
 }
 
 func (s *DevServer) GetStaticFS() http.FileSystem {

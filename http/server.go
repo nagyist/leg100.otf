@@ -3,6 +3,7 @@ package http
 import (
 	"context"
 	"fmt"
+	"html/template"
 	"net"
 	"net/http"
 	"time"
@@ -253,10 +254,10 @@ func (s *Server) SetFlashMessage(w http.ResponseWriter, r *http.Request, msg str
 	return nil
 }
 
-func (s *Server) GetFlashMessages(w http.ResponseWriter, r *http.Request) []string {
+func (s *Server) GetFlashMessages(w http.ResponseWriter, r *http.Request) []template.HTML {
 	session, _ := store.Get(r, FlashKey)
 
-	flashes := interfaceSliceToStringSlice(session.Flashes())
+	flashes := strSliceToHTMLTemplateSlice(interfaceSliceToStringSlice(session.Flashes()))
 
 	// Having read flashes we can now clear them from the session.
 	session.Save(r, w)

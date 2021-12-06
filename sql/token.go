@@ -41,7 +41,7 @@ func (db TokenDB) Create(ctx context.Context, token otf.Token) error {
 }
 
 func (db TokenDB) List(ctx context.Context) ([]*otf.Token, error) {
-	selectBuilder := psql.Select("*").From("tokens")
+	selectBuilder := psql.Select("*").From("tokens").OrderBy("created_at DESC")
 
 	sql, args, err := selectBuilder.ToSql()
 	if err != nil {

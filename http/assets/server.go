@@ -21,6 +21,7 @@ type Server interface {
 }
 
 type LayoutTemplateOptions struct {
+	Title         string
 	Stylesheets   []string
-	FlashMessages []string
+	FlashMessages []template.HTML
 }
