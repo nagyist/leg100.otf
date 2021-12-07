@@ -22,17 +22,21 @@ func NewTokenService(db otf.TokenStore, logger logr.Logger) *TokenService {
 	}
 }
 
-func (s TokenService) Create(ctx context.Context, opts otf.TokenCreateOptions) (string, error) {
-	token, metadata := otf.NewToken(opts)
-
-	if err := s.db.Create(ctx, metadata); err != nil {
-		s.Error(err, "creating token")
-		return "", err
+func (s TokenService) Create(ctx context.Context, opts otf.TokenCreateOptions) (*otf.Token, string, error) {
+	token, secret, err := otf.NewToken(opts)
+	if err != nil {
+		s.Error(err, "constructing token")
+		return nil, "", err
 	}
 
-	s.V(2).Info("created token", "id", metadata.ID)
+	if err := s.db.Create(ctx, token); err != nil {
+		s.Error(err, "creating token")
+		return nil, "", err
+	}
 
-	return token, nil
+	s.V(2).Info("created token", "id", token.ID)
+
+	return &token, secret, nil
 }
 
 func (s TokenService) Get(ctx context.Context, id string) (*otf.Token, error) {

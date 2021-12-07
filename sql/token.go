@@ -25,8 +25,8 @@ func NewTokenDB(db *sqlx.DB) *TokenDB {
 func (db TokenDB) Create(ctx context.Context, token otf.Token) error {
 	sql, args, err := psql.
 		Insert("tokens").
-		Columns("token_id", "created_at", "updated_at", "description").
-		Values(token.ID, token.CreatedAt, token.UpdatedAt, token.Description).
+		Columns("token_id", "created_at", "updated_at", "description", "hash").
+		Values(token.ID, token.CreatedAt, token.UpdatedAt, token.Description, token.Hash).
 		ToSql()
 	if err != nil {
 		return err

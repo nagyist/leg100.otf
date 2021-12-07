@@ -135,6 +135,9 @@ func NewRouter(server *Server) *mux.Router {
 	// Filter api v2 requests
 	sub = sub.PathPrefix("/api/v2").Subrouter()
 
+	// Require valid API token for all json-api requests
+	sub.Use(newAuthMiddleware(server.TokenService).Middleware)
+
 	sub.HandleFunc("/ping", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusNoContent)
 	})

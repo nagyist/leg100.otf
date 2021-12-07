@@ -1,9 +1,13 @@
 package otf
 
-import "context"
+import (
+	"context"
+	"crypto/sha256"
+	"fmt"
+)
 
 type TokenService interface {
-	Create(ctx context.Context, opts TokenCreateOptions) (string, error)
+	Create(ctx context.Context, opts TokenCreateOptions) (*Token, string, error)
 	Get(ctx context.Context, id string) (*Token, error)
 	List(ctx context.Context) ([]*Token, error)
 	Delete(ctx context.Context, id string) error
@@ -17,12 +21,15 @@ type TokenStore interface {
 	Delete(ctx context.Context, id string) error
 }
 
-// Token is the metadata for a user's API token (but not the token itself)
+// Token is the metadata for a user's API token
 type Token struct {
 	Timestamps
 
 	ID          string `db:"token_id"`
 	Description string
+
+	// SHA-256 hash of token string
+	Hash []byte
 }
 
 // TokenCreateOptions represents the options for creating a new token.
@@ -33,6 +40,10 @@ type TokenCreateOptions struct {
 	Type string `jsonapi:"primary,authentication-tokens"`
 
 	Description string `jsonapi:"attr,description"`
+
+	// Optional. Provide hardcoded token. Skips generation of a random secure
+	// string.
+	Token *string
 }
 
 // TokenListOptions are the options for listing tokens.
@@ -41,12 +52,28 @@ type TokenListOptions struct {
 	OrderBy *string
 }
 
-func NewToken(opts TokenCreateOptions) (string, Token) {
+// NewToken constructs a new Token object. Returns the Token object, along with
+// the secure string itself.
+func NewToken(opts TokenCreateOptions) (Token, string, error) {
+	var secureStr string
+
+	if opts.Token != nil {
+		secureStr = *opts.Token
+	} else {
+		secureStr = GenerateRandomString(32)
+	}
+
+	h := sha256.New()
+	if _, err := h.Write([]byte(secureStr)); err != nil {
+		return Token{}, "", fmt.Errorf("producing hash of secure string: %w", err)
+	}
+
 	token := Token{
 		ID:          NewID("at"),
 		Timestamps:  NewTimestamps(),
 		Description: opts.Description,
+		Hash:        h.Sum(nil),
 	}
 
-	return GenerateRandomString(32), token
+	return token, secureStr, nil
 }

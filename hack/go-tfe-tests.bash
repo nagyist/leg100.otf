@@ -5,7 +5,6 @@
 
 set -ex
 
-export TFE_TOKEN=dummy
 export TFE_ADDRESS=https://localhost:8080
 export SKIP_PAID=1
 

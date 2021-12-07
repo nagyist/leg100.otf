@@ -43,13 +43,13 @@ func (s *Server) CreateToken(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	token, err := s.TokenService.Create(r.Context(), otf.TokenCreateOptions{Description: desc})
+	_, secret, err := s.TokenService.Create(r.Context(), otf.TokenCreateOptions{Description: desc})
 	if err != nil {
 		WriteError(w, http.StatusNotFound, err)
 		return
 	}
 
-	if err := s.SetFlashMessage(w, r, fmt.Sprintf("Created token: <code>%s</code>", token)); err != nil {
+	if err := s.SetFlashMessage(w, r, fmt.Sprintf("Created token: <code>%s</code>", secret)); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
