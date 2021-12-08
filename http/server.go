@@ -99,7 +99,7 @@ func NewRouter(server *Server) *mux.Router {
 	router := mux.NewRouter()
 
 	// Catch panics and return 500s
-	router.Use(handlers.RecoveryHandler())
+	router.Use(handlers.RecoveryHandler(handlers.PrintRecoveryStack(true)))
 
 	// Optionally enable HTTP request logging
 	if server.EnableRequestLogging {
@@ -121,7 +121,7 @@ func NewRouter(server *Server) *mux.Router {
 	router.HandleFunc("/app/settings/tokens", server.ListTokens).Methods("GET")
 	router.HandleFunc("/app/settings/tokens", server.CreateToken).Methods("POST")
 	router.HandleFunc("/app/settings/tokens/delete", server.DeleteToken).Methods("POST")
-	router.HandleFunc("/healthz", server.Healthz).Methods("GET")
+	router.HandleFunc("/healthz", GetHealthz).Methods("GET")
 	router.PathPrefix("/static/").Handler(http.StripPrefix("/static", http.FileServer(server.GetStaticFS()))).Methods("GET")
 
 	router.HandleFunc("/app/{org}/{workspace}/runs/{id}", server.GetRunLogs).Methods("GET")
