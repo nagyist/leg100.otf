@@ -5,11 +5,11 @@ import (
 	"net/http"
 )
 
-var (
-	// Paths to assets in relative to the package director
-	layoutTemplatePath  = "templates/layout.tmpl"
-	contentTemplatesDir = "templates/content"
-	stylesheetDir       = "css"
+const (
+	// Paths to static assets in relation to the package directory
+	layoutTemplatePath  = "static/templates/layout.tmpl"
+	contentTemplatesDir = "static/templates/content"
+	stylesheetDir       = "static/css"
 )
 
 // Server provides the means to retrieve http assets (templates and static files

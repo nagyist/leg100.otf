@@ -9,7 +9,7 @@ import (
 	"github.com/Masterminds/sprig"
 )
 
-var (
+const (
 	// AssetsDir is the relative path in the source git repository for this
 	// package.
 	AssetsDir = "http/assets"

@@ -12,8 +12,7 @@ import (
 )
 
 var (
-	//go:embed css/*
-	//go:embed templates/*
+	//go:embed static
 	embedded embed.FS
 )
 
