@@ -24,7 +24,6 @@ CREATE TABLE IF NOT EXISTS organizations (
     created_at timestamptz,
     updated_at timestamptz,
     name text,
-    email text,
     session_remember integer,
     session_timeout integer,
     PRIMARY KEY (organization_id)

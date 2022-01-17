@@ -44,7 +44,6 @@ func (s OrganizationService) GetEntitlements(name string) (*otf.Entitlements, er
 func NewOrganization(name, email string) *otf.Organization {
 	return &otf.Organization{
 		Name:            name,
-		Email:           email,
 		SessionTimeout:  otf.DefaultSessionTimeout,
 		SessionRemember: otf.DefaultSessionExpiration,
 	}
