@@ -2,7 +2,6 @@ package otf
 
 import (
 	"context"
-	"errors"
 )
 
 var (
@@ -113,19 +112,6 @@ type OrganizationStore interface {
 
 func (org *Organization) GetID() string  { return org.ID }
 func (org *Organization) String() string { return org.ID }
-
-func (o OrganizationCreateOptions) Valid() error {
-	if !validString(o.Name) {
-		return ErrRequiredName
-	}
-	if !ValidStringID(o.Name) {
-		return ErrInvalidName
-	}
-	if !validString(o.Email) {
-		return errors.New("email is required")
-	}
-	return nil
-}
 
 func NewOrganization(opts OrganizationCreateOptions) (*Organization, error) {
 	org := Organization{

@@ -1,6 +1,7 @@
 package http
 
 import (
+	"errors"
 	"net/http"
 	"time"
 
@@ -29,6 +30,19 @@ type Organization struct {
 type OrganizationList struct {
 	*otf.Pagination
 	Items []*Organization
+}
+
+func (o OrganizationCreateOptions) Valid() error {
+	if !validString(o.Name) {
+		return ErrRequiredName
+	}
+	if !ValidStringID(o.Name) {
+		return ErrInvalidName
+	}
+	if !validString(o.Email) {
+		return errors.New("email is required")
+	}
+	return nil
 }
 
 // ToDomain converts http organization obj to a domain organization obj.
