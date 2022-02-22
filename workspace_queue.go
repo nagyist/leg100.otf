@@ -14,16 +14,42 @@ type Queue interface {
 }
 
 // WorkspaceQueue is the queue of runs for a workspace. The queue has at most
-// one active run, which blocks other pending runs. Speculative runs do not
-// block and are therefore not added to the queue.
+// one active run, which blocks other pending runs and locks the workspace.
+// Speculative runs do not block and are therefore not added to the queue.
 type WorkspaceQueue struct {
 	// Active is the currently active run.
 	Active *Run
+
 	// Pending is the list of pending runs waiting for the active run to
 	// complete.
 	Pending []*Run
+
 	// PlanEnqueuer enqueues a plan onto the global queue
 	PlanEnqueuer
+}
+
+// Update updates the queue with the given run. If it's a speculative run
+func (q *WorkspaceQueue) Update(run *Run) error {
+	// Enqueue speculative runs onto (global) queue but don't make them active
+	// because they do not block pending runs
+	if run.IsSpeculative() {
+		return q.EnqueuePlan(context.Background(), run.ID)
+	}
+
+	// No run is current active, so make this run active
+	if q.Active == nil {
+		if err := q.EnqueuePlan(context.Background(), run.ID); err != nil {
+			return err
+		}
+
+		q.Active = run
+		return nil
+	}
+
+	// Other add run to pending queue
+	q.Pending = append(q.Pending, run)
+
+	return nil
 }
 
 // Add adds a run to the workspace queue.

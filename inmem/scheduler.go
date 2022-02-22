@@ -61,7 +61,7 @@ func NewScheduler(ws otf.WorkspaceService, rs otf.RunService, es otf.EventServic
 		Queues:       queues,
 		RunService:   rs,
 		EventService: es,
-		Logger:       logger,
+		Logger:       logger.WithValues("component", "scheduler"),
 	}
 
 	return s, nil
@@ -91,6 +91,8 @@ func (s *Scheduler) Start(ctx context.Context) error {
 }
 
 func (s *Scheduler) handleEvent(ev otf.Event) {
+	s.Info("event received", "event", ev.Type)
+
 	switch obj := ev.Payload.(type) {
 	case *otf.Workspace:
 		switch ev.Type {
