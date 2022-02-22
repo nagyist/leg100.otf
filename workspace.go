@@ -49,6 +49,9 @@ type Workspace struct {
 
 	// Workspace belongs to an organization
 	Organization *Organization `db:"organizations"`
+
+	// ID of user or run that has locked the workspace.
+	LockedBy *string
 }
 
 // WorkspaceCreateOptions represents the options for creating a new workspace.

@@ -180,7 +180,19 @@ CREATE TABLE IF NOT EXISTS apply_logs (
              PRIMARY KEY (apply_id, chunk_id)
 );
 
+CREATE TABLE IF NOT EXISTS run_locks (
+    run_id          TEXT REFERENCES runs ON UPDATE CASCADE NOT NULL,
+    workspace_id    TEXT REFERENCES workspaces ON UPDATE CASCADE ON DELETE CASCADE NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS user_locks (
+    user_id         TEXT REFERENCES users ON UPDATE CASCADE NOT NULL,
+    workspace_id    TEXT REFERENCES workspaces ON UPDATE CASCADE ON DELETE CASCADE NOT NULL
+);
+
 -- +goose Down
+DROP TABLE IF EXISTS user_locks;
+DROP TABLE IF EXISTS run_locks;
 DROP TABLE IF EXISTS apply_logs;
 DROP TABLE IF EXISTS plan_logs;
 DROP TABLE IF EXISTS state_version_outputs;

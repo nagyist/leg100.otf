@@ -131,6 +131,10 @@ func (db WorkspaceDB) List(opts otf.WorkspaceListOptions) (*otf.WorkspaceList, e
 	selectBuilder = selectBuilder.
 		Columns(asColumnList("workspaces", false, workspaceColumns...)).
 		Columns(asColumnList("organizations", true, organizationColumns...)).
+		Columns("user_locks.user_id AS locked_by").
+		Columns("run_locks.run_id AS locked_by").
+		LeftJoin("user_locks USING (workspace_id)").
+		LeftJoin("run_locks USING (workspace_id)").
 		Limit(opts.GetLimit()).
 		Offset(opts.GetOffset())
 
@@ -175,8 +179,12 @@ func (db WorkspaceDB) Delete(spec otf.WorkspaceSpec) error {
 func getWorkspace(db Getter, spec otf.WorkspaceSpec) (*otf.Workspace, error) {
 	selectBuilder := psql.Select(asColumnList("workspaces", false, workspaceColumns...)).
 		Columns(asColumnList("organizations", true, organizationColumns...)).
+		Columns("user_locks.user_id AS locked_by").
+		Columns("run_locks.run_id AS locked_by").
 		From("workspaces").
-		Join("organizations USING (organization_id)")
+		Join("organizations USING (organization_id)").
+		LeftJoin("user_locks USING (workspace_id)").
+		LeftJoin("run_locks USING (workspace_id)")
 
 	switch {
 	case spec.ID != nil:
