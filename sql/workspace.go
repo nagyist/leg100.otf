@@ -1,6 +1,7 @@
 package sql
 
 import (
+	"context"
 	"fmt"
 	"strings"
 
@@ -96,6 +97,11 @@ func (db WorkspaceDB) Update(spec otf.WorkspaceSpec, fn func(*otf.Workspace) err
 		return nil, err
 	}
 
+	// Workspace's lock is updated separately in intersection tables.
+	if err := updateWorkspaceLock(ctx, db.DB, before.(*otf.Workspace), ws); err != nil {
+		return err
+	}
+
 	updated, err := update(db.Mapper, tx, "workspaces", "workspace_id", before.(*otf.Workspace), ws)
 	if err != nil {
 		return nil, err
@@ -131,10 +137,10 @@ func (db WorkspaceDB) List(opts otf.WorkspaceListOptions) (*otf.WorkspaceList, e
 	selectBuilder = selectBuilder.
 		Columns(asColumnList("workspaces", false, workspaceColumns...)).
 		Columns(asColumnList("organizations", true, organizationColumns...)).
-		Columns("user_locks.user_id AS locked_by").
-		Columns("run_locks.run_id AS locked_by").
-		LeftJoin("user_locks USING (workspace_id)").
-		LeftJoin("run_locks USING (workspace_id)").
+		Columns("lock_user.user_id", "lock_user.username").
+		Columns("run_user.run_id").
+		LeftJoin("(user_locks JOIN users AS lock_user USING (user_id)) USING (workspace_id)").
+		LeftJoin("(run_locks JOIN runs AS lock_run USING (run_id)) USING (workspace_id)").
 		Limit(opts.GetLimit()).
 		Offset(opts.GetOffset())
 
@@ -209,4 +215,26 @@ func getWorkspace(db Getter, spec otf.WorkspaceSpec) (*otf.Workspace, error) {
 	}
 
 	return &ws, nil
+}
+
+func updateWorkspaceLock(ctx context.Context, db *sqlx.DB, existing, updated *otf.Workspace) error {
+	if existing.Locked == updated.Locked {
+		return nil
+	}
+
+	if updated.Locked {
+		if err := addWorkspaceLock(ctx, db, existing, added); err != nil {
+			return err
+		}
+	} else {
+		if err := removeWorkspaceLock(ctx, db, existing, added); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func addWorkspaceLock(ctx context.Context, db *sqlx.DB, existing, updated *otf.Workspace) error {
+	insertBuilder := psql.Insert("").Columns("user_id", "organization_id")
 }

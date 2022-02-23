@@ -14,9 +14,10 @@ const (
 )
 
 var (
-	ErrWorkspaceAlreadyLocked   = errors.New("workspace already locked")
-	ErrWorkspaceAlreadyUnlocked = errors.New("workspace already unlocked")
-	ErrInvalidWorkspaceSpec     = errors.New("invalid workspace spec options")
+	ErrWorkspaceAlreadyLocked         = errors.New("workspace already locked")
+	ErrWorkspaceAlreadyUnlocked       = errors.New("workspace already unlocked")
+	ErrWorkspaceLockedByDifferentUser = errors.New("workspace locked by different user")
+	ErrInvalidWorkspaceSpec           = errors.New("invalid workspace spec options")
 )
 
 // Workspace represents a Terraform Enterprise workspace.
@@ -34,7 +35,6 @@ type Workspace struct {
 	ExecutionMode              string
 	FileTriggersEnabled        bool
 	GlobalRemoteState          bool
-	Locked                     bool
 	MigrationEnvironment       string
 	Name                       string `schema:"workspace_name"`
 	QueueAllRuns               bool
@@ -50,8 +50,8 @@ type Workspace struct {
 	// Workspace belongs to an organization
 	Organization *Organization `db:"organizations"`
 
-	// ID of user or run that has locked the workspace.
-	LockedBy *string
+	// Information regarding who/what has locked workspace
+	WorkspaceLock
 }
 
 // WorkspaceCreateOptions represents the options for creating a new workspace.
@@ -244,10 +244,45 @@ type VCSRepoOptions struct {
 	OAuthTokenID      *string `json:"oauth-token-id,omitempty"`
 }
 
-// WorkspaceLockOptions represents the options for locking a workspace.
-type WorkspaceLockOptions struct {
-	// Specifies the reason for locking the workspace.
-	Reason *string `jsonapi:"attr,reason,omitempty"`
+// WorkspaceLock is the lock for the workspace.
+type WorkspaceLock struct {
+	Locker WorkspaceLocker
+}
+
+// WorkspaceLocker identifies the entity locking/unlocking a workspace lock.
+type WorkspaceLocker interface {
+	GetID() string
+	String() string
+}
+
+// Lock locks the workspace
+func (l *WorkspaceLock) Lock(locker WorkspaceLocker) error {
+	if l.IsLocked() {
+		return ErrWorkspaceAlreadyLocked
+	}
+
+	l.Locker = locker
+
+	return nil
+}
+
+// Unlock unlocks the workspace
+func (l *WorkspaceLock) Unlock(locker WorkspaceLocker) error {
+	if !l.IsLocked() {
+		return ErrWorkspaceAlreadyUnlocked
+	}
+
+	if l.Locker.GetID() != locker.GetID() {
+		return ErrWorkspaceLockedByDifferentUser
+	}
+
+	l.Locker = nil
+
+	return nil
+}
+
+func (l WorkspaceLock) IsLocked() bool {
+	return l.Locker != nil
 }
 
 // WorkspaceList represents a list of Workspaces.
@@ -261,8 +296,8 @@ type WorkspaceService interface {
 	Get(ctx context.Context, spec WorkspaceSpec) (*Workspace, error)
 	List(ctx context.Context, opts WorkspaceListOptions) (*WorkspaceList, error)
 	Update(ctx context.Context, spec WorkspaceSpec, opts WorkspaceUpdateOptions) (*Workspace, error)
-	Lock(ctx context.Context, spec WorkspaceSpec, opts WorkspaceLockOptions) (*Workspace, error)
-	Unlock(ctx context.Context, spec WorkspaceSpec) (*Workspace, error)
+	Lock(ctx context.Context, spec WorkspaceSpec, locker WorkspaceLocker) (*Workspace, error)
+	Unlock(ctx context.Context, spec WorkspaceSpec, locker WorkspaceLocker) (*Workspace, error)
 	Delete(ctx context.Context, spec WorkspaceSpec) error
 }
 
@@ -489,20 +524,6 @@ func UpdateWorkspace(ws *Workspace, opts WorkspaceUpdateOptions) (*Workspace, er
 	}
 
 	return ws, nil
-}
-
-// ToggleLock toggles the workspace lock.
-func (ws *Workspace) ToggleLock(lock bool) error {
-	if lock && ws.Locked {
-		return ErrWorkspaceAlreadyLocked
-	}
-	if !lock && !ws.Locked {
-		return ErrWorkspaceAlreadyUnlocked
-	}
-
-	ws.Locked = lock
-
-	return nil
 }
 
 func (spec *WorkspaceSpec) String() string {

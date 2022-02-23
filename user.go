@@ -14,6 +14,18 @@ const (
 	DefaultSessionExpiry = 24 * time.Hour
 
 	AnonymousUsername string = "anonymous"
+
+	DefaultUserID   = "user-123"
+	DefaultUsername = "otf"
+)
+
+var (
+	// Until authentication is enforced, DefaultUser can be used where a user
+	// obj is needed.
+	DefaultUser = User{
+		ID:       DefaultUserID,
+		Username: DefaultUsername,
+	}
 )
 
 // User represents an oTF user account.

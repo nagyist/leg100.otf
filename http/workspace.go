@@ -223,7 +223,7 @@ func (s *Server) UpdateWorkspaceByID(w http.ResponseWriter, r *http.Request) {
 func (s *Server) LockWorkspace(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 
-	opts := otf.WorkspaceLockOptions{}
+	opts := otf.WorkspaceLockOptions{WorkspaceLock: otf.WorkspaceLock{User: &otf.DefaultUser}}
 	if err := jsonapi.UnmarshalPayload(r.Body, &opts); err != nil {
 		WriteError(w, http.StatusUnprocessableEntity, err)
 		return
@@ -254,7 +254,8 @@ func (s *Server) UnlockWorkspace(w http.ResponseWriter, r *http.Request) {
 		ID: &id,
 	}
 
-	obj, err := s.WorkspaceService().Unlock(r.Context(), spec)
+	opts := otf.WorkspaceUnlockOptions{User: &otf.DefaultUser}
+	obj, err := s.WorkspaceService().Unlock(r.Context(), spec, opts)
 	if err == otf.ErrWorkspaceAlreadyUnlocked {
 		WriteError(w, http.StatusConflict, err)
 		return
