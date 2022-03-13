@@ -74,6 +74,10 @@ func (u *User) String() string {
 	return u.Username
 }
 
+func (u *User) GetID() string {
+	return u.ID
+}
+
 // TransferSession transfers a session from the receiver to another user.
 func (u *User) TransferSession(session *Session, to *User) {
 	// Update session's user reference

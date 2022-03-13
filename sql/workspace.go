@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"strings"
 
+	sq "github.com/Masterminds/squirrel"
 	"github.com/jmoiron/sqlx"
 	"github.com/leg100/otf"
 	"github.com/mitchellh/copystructure"
@@ -217,24 +218,59 @@ func getWorkspace(db Getter, spec otf.WorkspaceSpec) (*otf.Workspace, error) {
 	return &ws, nil
 }
 
-func updateWorkspaceLock(ctx context.Context, db *sqlx.DB, existing, updated *otf.Workspace) error {
-	if existing.Locked == updated.Locked {
+func updateWorkspaceLock(ctx context.Context, db *sqlx.DB, existing, updated *otf.Workspace) (err error) {
+	if existing.IsLocked() == updated.IsLocked() {
 		return nil
 	}
 
-	if updated.Locked {
-		if err := addWorkspaceLock(ctx, db, existing, added); err != nil {
-			return err
-		}
+	if updated.IsLocked() {
+		err = addWorkspaceLock(ctx, db, updated)
 	} else {
-		if err := removeWorkspaceLock(ctx, db, existing, added); err != nil {
-			return err
-		}
+		err = removeWorkspaceLock(ctx, db, existing, added)
+	}
+	if err != nil {
+		return err
 	}
 
 	return nil
 }
 
-func addWorkspaceLock(ctx context.Context, db *sqlx.DB, existing, updated *otf.Workspace) error {
-	insertBuilder := psql.Insert("").Columns("user_id", "organization_id")
+func addWorkspaceLock(ctx context.Context, db *sqlx.DB, ws *otf.Workspace) error {
+	insertBuilder := sq.InsertBuilder(psql).Columns("workspace_id").Values(ws.ID)
+
+	switch locker := ws.Locker.(type) {
+	case *otf.User:
+		insertBuilder = insertBuilder.Into("user_locks").Columns("user_id").Values(locker.GetID())
+	case *otf.Run:
+		insertBuilder = insertBuilder.Into("run_locks").Columns("run_id").Values(locker.GetID())
+	default:
+		return fmt.Errorf("invalid locker type: %T", locker)
+	}
+
+	_, err := insertBuilder.RunWith(db).ExecContext(ctx)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func removeWorkspaceLock(ctx context.Context, db *sqlx.DB, ws *otf.Workspace) error {
+	deleteBuilder := sq.DeleteBuilder(psql).Where("workspace_id = ?", ws.ID)
+
+	switch locker := ws.Locker.(type) {
+	case *otf.User:
+		deleteBuilder = deleteBuilder.From("user_locks").Where("user_id = ?", locker.GetID())
+	case *otf.Run:
+		deleteBuilder = deleteBuilder.From("run_locks").Where("run_id = ?", locker.GetID())
+	default:
+		return fmt.Errorf("invalid locker type: %T", locker)
+	}
+
+	_, err := deleteBuilder.RunWith(db).ExecContext(ctx)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
