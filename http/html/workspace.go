@@ -187,7 +187,7 @@ func (c *WorkspaceController) Lock(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_, err := c.WorkspaceService.Lock(r.Context(), spec, otf.WorkspaceLockOptions{})
+	_, err := c.WorkspaceService.Lock(r.Context(), spec, &otf.DefaultUser)
 	if err != nil {
 		writeError(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -204,7 +204,7 @@ func (c *WorkspaceController) Unlock(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_, err := c.WorkspaceService.Unlock(r.Context(), spec)
+	_, err := c.WorkspaceService.Unlock(r.Context(), spec, &otf.DefaultUser)
 	if err != nil {
 		writeError(w, err.Error(), http.StatusInternalServerError)
 		return

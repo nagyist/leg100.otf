@@ -106,14 +106,40 @@ func (s WorkspaceService) Delete(ctx context.Context, spec otf.WorkspaceSpec) er
 	return nil
 }
 
-func (s WorkspaceService) Lock(ctx context.Context, spec otf.WorkspaceSpec, _ otf.WorkspaceLockOptions) (*otf.Workspace, error) {
-	return s.db.Update(spec, func(ws *otf.Workspace) (err error) {
-		return ws.ToggleLock(true)
+func (s WorkspaceService) Lock(ctx context.Context, spec otf.WorkspaceSpec, locker otf.WorkspaceLocker) (*otf.Workspace, error) {
+	ws, err := s.db.Update(spec, func(ws *otf.Workspace) (err error) {
+		return ws.Lock(locker)
 	})
+	if err != nil {
+		return nil, err
+	}
+
+	s.es.Publish(otf.Event{Type: otf.EventWorkspaceLocked, Payload: ws})
+
+	s.V(0).Info("locked workspace", "id", ws.ID, "name", ws.Name, "locker", locker.String())
+
+	return ws, nil
 }
 
-func (s WorkspaceService) Unlock(ctx context.Context, spec otf.WorkspaceSpec) (*otf.Workspace, error) {
-	return s.db.Update(spec, func(ws *otf.Workspace) (err error) {
-		return ws.ToggleLock(false)
+func (s WorkspaceService) Unlock(ctx context.Context, spec otf.WorkspaceSpec, unlocker otf.WorkspaceLocker) (*otf.Workspace, error) {
+	return s.unlock(ctx, spec, unlocker, false)
+}
+
+func (s WorkspaceService) ForceUnlock(ctx context.Context, spec otf.WorkspaceSpec, unlocker otf.WorkspaceLocker) (*otf.Workspace, error) {
+	return s.unlock(ctx, spec, unlocker, true)
+}
+
+func (s WorkspaceService) unlock(ctx context.Context, spec otf.WorkspaceSpec, unlocker otf.WorkspaceLocker, force bool) (*otf.Workspace, error) {
+	ws, err := s.db.Update(spec, func(ws *otf.Workspace) (err error) {
+		return ws.Unlock(unlocker, force)
 	})
+	if err != nil {
+		return nil, err
+	}
+
+	s.es.Publish(otf.Event{Type: otf.EventWorkspaceUnlocked, Payload: ws})
+
+	s.V(0).Info("unlocked workspace", "id", ws.ID, "name", ws.Name, "unlocker", unlocker.String(), "forced", force)
+
+	return ws, nil
 }

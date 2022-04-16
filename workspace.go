@@ -14,10 +14,7 @@ const (
 )
 
 var (
-	ErrWorkspaceAlreadyLocked         = errors.New("workspace already locked")
-	ErrWorkspaceAlreadyUnlocked       = errors.New("workspace already unlocked")
-	ErrWorkspaceLockedByDifferentUser = errors.New("workspace locked by different user")
-	ErrInvalidWorkspaceSpec           = errors.New("invalid workspace spec options")
+	ErrInvalidWorkspaceSpec = errors.New("invalid workspace spec options")
 )
 
 // Workspace represents a Terraform Enterprise workspace.
@@ -244,47 +241,6 @@ type VCSRepoOptions struct {
 	OAuthTokenID      *string `json:"oauth-token-id,omitempty"`
 }
 
-// WorkspaceLock is the lock for the workspace.
-type WorkspaceLock struct {
-	Locker WorkspaceLocker
-}
-
-// WorkspaceLocker identifies the entity locking/unlocking a workspace lock.
-type WorkspaceLocker interface {
-	GetID() string
-	String() string
-}
-
-// Lock locks the workspace
-func (l *WorkspaceLock) Lock(locker WorkspaceLocker) error {
-	if l.IsLocked() {
-		return ErrWorkspaceAlreadyLocked
-	}
-
-	l.Locker = locker
-
-	return nil
-}
-
-// Unlock unlocks the workspace
-func (l *WorkspaceLock) Unlock(locker WorkspaceLocker) error {
-	if !l.IsLocked() {
-		return ErrWorkspaceAlreadyUnlocked
-	}
-
-	if l.Locker.GetID() != locker.GetID() {
-		return ErrWorkspaceLockedByDifferentUser
-	}
-
-	l.Locker = nil
-
-	return nil
-}
-
-func (l WorkspaceLock) IsLocked() bool {
-	return l.Locker != nil
-}
-
 // WorkspaceList represents a list of Workspaces.
 type WorkspaceList struct {
 	*Pagination
@@ -297,7 +253,8 @@ type WorkspaceService interface {
 	List(ctx context.Context, opts WorkspaceListOptions) (*WorkspaceList, error)
 	Update(ctx context.Context, spec WorkspaceSpec, opts WorkspaceUpdateOptions) (*Workspace, error)
 	Lock(ctx context.Context, spec WorkspaceSpec, locker WorkspaceLocker) (*Workspace, error)
-	Unlock(ctx context.Context, spec WorkspaceSpec, locker WorkspaceLocker) (*Workspace, error)
+	Unlock(ctx context.Context, spec WorkspaceSpec, unlocker WorkspaceLocker) (*Workspace, error)
+	ForceUnlock(ctx context.Context, spec WorkspaceSpec, unlocker WorkspaceLocker) (*Workspace, error)
 	Delete(ctx context.Context, spec WorkspaceSpec) error
 }
 
@@ -309,8 +266,8 @@ type WorkspaceStore interface {
 	Delete(spec WorkspaceSpec) error
 }
 
-// WorkspaceSpec is used for identifying an individual workspace. Either ID
-// *or* both Name and OrganizationName must be specfiied.
+// WorkspaceSpec identifies a workspace. Must specify either ID or both Name and
+// OrganizationName.
 type WorkspaceSpec struct {
 	// Specify workspace using its ID
 	ID *string `db:"workspace_id"`

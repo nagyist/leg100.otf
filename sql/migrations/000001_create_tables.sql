@@ -22,7 +22,6 @@ CREATE TABLE IF NOT EXISTS workspaces (
     execution_mode                  TEXT        NOT NULL,
     file_triggers_enabled           BOOLEAN     NOT NULL,
     global_remote_state             BOOLEAN     NOT NULL,
-    locked                          BOOLEAN     NOT NULL,
     migration_environment           TEXT        NOT NULL,
     name                            TEXT        NOT NULL,
     queue_all_runs                  BOOLEAN     NOT NULL,

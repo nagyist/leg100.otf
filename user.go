@@ -70,13 +70,8 @@ func (u *User) IsAuthenticated() bool {
 	return u.Username != AnonymousUsername
 }
 
-func (u *User) String() string {
-	return u.Username
-}
-
-func (u *User) GetID() string {
-	return u.ID
-}
+func (u *User) GetID() string  { return u.ID }
+func (u *User) String() string { return u.Username }
 
 // TransferSession transfers a session from the receiver to another user.
 func (u *User) TransferSession(session *Session, to *User) {

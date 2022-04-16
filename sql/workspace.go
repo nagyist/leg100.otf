@@ -26,7 +26,6 @@ var (
 		"execution_mode",
 		"file_triggers_enabled",
 		"global_remote_state",
-		"locked",
 		"migration_environment",
 		"name",
 		"queue_all_runs",
@@ -54,8 +53,7 @@ func NewWorkspaceDB(db *sqlx.DB) *WorkspaceDB {
 	}
 }
 
-// Create persists a Workspace to the DB. The returned Workspace is adorned with
-// additional metadata, i.e. CreatedAt, UpdatedAt, etc.
+// Create persists a Workspace to the DB.
 func (db WorkspaceDB) Create(ws *otf.Workspace) (*otf.Workspace, error) {
 	spec := otf.WorkspaceSpec{OrganizationName: &ws.Organization.Name, Name: &ws.Name}
 	if _, err := getWorkspace(db.DB, spec); err == nil {
@@ -99,8 +97,8 @@ func (db WorkspaceDB) Update(spec otf.WorkspaceSpec, fn func(*otf.Workspace) err
 	}
 
 	// Workspace's lock is updated separately in intersection tables.
-	if err := updateWorkspaceLock(ctx, db.DB, before.(*otf.Workspace), ws); err != nil {
-		return err
+	if err := updateWorkspaceLock(context.Background(), db.DB, before.(*otf.Workspace), ws); err != nil {
+		return nil, err
 	}
 
 	updated, err := update(db.Mapper, tx, "workspaces", "workspace_id", before.(*otf.Workspace), ws)
@@ -138,7 +136,7 @@ func (db WorkspaceDB) List(opts otf.WorkspaceListOptions) (*otf.WorkspaceList, e
 	selectBuilder = selectBuilder.
 		Columns(asColumnList("workspaces", false, workspaceColumns...)).
 		Columns(asColumnList("organizations", true, organizationColumns...)).
-		Columns("lock_user.user_id", "lock_user.username").
+		Columns(asColumnList("lock_user", true, userColumns...)).
 		Columns("run_user.run_id").
 		LeftJoin("(user_locks JOIN users AS lock_user USING (user_id)) USING (workspace_id)").
 		LeftJoin("(run_locks JOIN runs AS lock_run USING (run_id)) USING (workspace_id)").
@@ -223,10 +221,10 @@ func updateWorkspaceLock(ctx context.Context, db *sqlx.DB, existing, updated *ot
 		return nil
 	}
 
-	if updated.IsLocked() {
-		err = addWorkspaceLock(ctx, db, updated)
+	if existing.IsLocked() {
+		err = removeWorkspaceLock(ctx, db, existing)
 	} else {
-		err = removeWorkspaceLock(ctx, db, existing, added)
+		err = addWorkspaceLock(ctx, db, updated)
 	}
 	if err != nil {
 		return err
@@ -244,7 +242,7 @@ func addWorkspaceLock(ctx context.Context, db *sqlx.DB, ws *otf.Workspace) error
 	case *otf.Run:
 		insertBuilder = insertBuilder.Into("run_locks").Columns("run_id").Values(locker.GetID())
 	default:
-		return fmt.Errorf("invalid locker type: %T", locker)
+		return fmt.Errorf("unsupported locker type: %T", locker)
 	}
 
 	_, err := insertBuilder.RunWith(db).ExecContext(ctx)
@@ -264,7 +262,7 @@ func removeWorkspaceLock(ctx context.Context, db *sqlx.DB, ws *otf.Workspace) er
 	case *otf.Run:
 		deleteBuilder = deleteBuilder.From("run_locks").Where("run_id = ?", locker.GetID())
 	default:
-		return fmt.Errorf("invalid locker type: %T", locker)
+		return fmt.Errorf("unsupported locker type: %T", locker)
 	}
 
 	_, err := deleteBuilder.RunWith(db).ExecContext(ctx)
