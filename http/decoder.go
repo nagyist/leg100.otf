@@ -1,15 +1,19 @@
-package html
+package http
 
 import (
+	"fmt"
 	"net/http"
+	"net/url"
 
 	"github.com/gorilla/mux"
 	"github.com/gorilla/schema"
 )
 
 var (
-	// Query schema decoder: caches structs, and safe for sharing.
-	decoder = schema.NewDecoder()
+	// Query schema Encoder, caches structs, and safe for sharing
+	Encoder = schema.NewEncoder()
+	// Query schema Decoder: caches structs, and safe for sharing.
+	Decoder = schema.NewDecoder()
 )
 
 // decodeAll collectively decodes route params, query params and form params into
@@ -42,19 +46,19 @@ func decodeForm(r *http.Request, obj interface{}) error {
 	return nil
 }
 
-func decodeQuery(r *http.Request, obj interface{}) error {
-	if err := decoder.Decode(obj, r.URL.Query()); err != nil {
-		return err
+// DecodeQuery unmarshals a query string (k1=v1&k2=v2...) into a struct.
+func DecodeQuery(opts interface{}, query url.Values) error {
+	if err := Decoder.Decode(opts, query); err != nil {
+		return fmt.Errorf("unable to decode query string: %w", err)
 	}
-
 	return nil
 }
 
-func decodeRouteVars(r *http.Request, obj interface{}) error {
+func DecodeRoute(obj interface{}, r *http.Request) error {
 	// decoder only takes map[string][]string, not map[string]string
 	vars := convertStrMapToStrSliceMap(mux.Vars(r))
 
-	if err := decoder.Decode(obj, vars); err != nil {
+	if err := Decoder.Decode(obj, vars); err != nil {
 		return err
 	}
 

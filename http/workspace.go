@@ -52,72 +52,42 @@ func (s *Server) CreateWorkspace(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) GetWorkspace(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-
-	// Unmarshal query into spec
 	var spec otf.WorkspaceSpec
 	if err := DecodeQuery(&spec, r.URL.Query()); err != nil {
 		WriteError(w, http.StatusUnprocessableEntity, err)
 		return
 	}
-	// Set spec fields from route params
-	spec.Name = otf.String(vars["name"])
-	spec.OrganizationName = otf.String(vars["org"])
-
-	obj, err := s.WorkspaceService().Get(r.Context(), spec)
-	if err != nil {
-		WriteError(w, http.StatusNotFound, err)
-		return
-	}
-
-	WriteResponse(w, r, WorkspaceDTO(obj))
-}
-
-func (s *Server) GetWorkspaceByID(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	// Unmarshal query into spec
-	var spec otf.WorkspaceSpec
-	if err := DecodeQuery(&spec, r.URL.Query()); err != nil {
+	if err := DecodeRoute(&spec, r); err != nil {
 		WriteError(w, http.StatusUnprocessableEntity, err)
 		return
 	}
-	// Set spec fields from route params
-	spec.ID = otf.String(vars["id"])
-
 	obj, err := s.WorkspaceService().Get(r.Context(), spec)
 	if err != nil {
 		WriteError(w, http.StatusNotFound, err)
 		return
 	}
-
 	WriteResponse(w, r, WorkspaceDTO(obj))
 }
 
 func (s *Server) ListWorkspaces(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-
-	// Unmarshal query into opts struct
 	var opts otf.WorkspaceListOptions
 	if err := DecodeQuery(&opts, r.URL.Query()); err != nil {
 		WriteError(w, http.StatusUnprocessableEntity, err)
 		return
 	}
-
-	// Add org name from path to opts
-	opts.OrganizationName = vars["org"]
-
+	if err := DecodeRoute(&opts, r); err != nil {
+		WriteError(w, http.StatusUnprocessableEntity, err)
+		return
+	}
 	obj, err := s.WorkspaceService().List(r.Context(), opts)
 	if err != nil {
 		WriteError(w, http.StatusNotFound, err)
 		return
 	}
-
 	WriteResponse(w, r, WorkspaceListJSONAPIObject(obj))
 }
 
 func (s *Server) UpdateWorkspace(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-
 	opts := dto.WorkspaceUpdateOptions{}
 	if err := jsonapi.UnmarshalPayload(r.Body, &opts); err != nil {
 		WriteError(w, http.StatusUnprocessableEntity, err)
@@ -127,47 +97,10 @@ func (s *Server) UpdateWorkspace(w http.ResponseWriter, r *http.Request) {
 		WriteError(w, http.StatusUnprocessableEntity, err)
 		return
 	}
-	spec := otf.WorkspaceSpec{
-		Name:             otf.String(vars["name"]),
-		OrganizationName: otf.String(vars["org"]),
-	}
-	obj, err := s.WorkspaceService().Update(r.Context(), spec, otf.WorkspaceUpdateOptions{
-		AllowDestroyPlan:           opts.AllowDestroyPlan,
-		AutoApply:                  opts.AutoApply,
-		Description:                opts.Description,
-		ExecutionMode:              opts.ExecutionMode,
-		FileTriggersEnabled:        opts.FileTriggersEnabled,
-		GlobalRemoteState:          opts.GlobalRemoteState,
-		Name:                       opts.Name,
-		QueueAllRuns:               opts.QueueAllRuns,
-		SpeculativeEnabled:         opts.SpeculativeEnabled,
-		StructuredRunOutputEnabled: opts.StructuredRunOutputEnabled,
-		TerraformVersion:           opts.TerraformVersion,
-		TriggerPrefixes:            opts.TriggerPrefixes,
-		WorkingDirectory:           opts.WorkingDirectory,
-	})
-	if err != nil {
-		WriteError(w, http.StatusNotFound, err)
-		return
-	}
-
-	WriteResponse(w, r, WorkspaceDTO(obj))
-}
-
-func (s *Server) UpdateWorkspaceByID(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-
-	opts := dto.WorkspaceUpdateOptions{}
-	if err := jsonapi.UnmarshalPayload(r.Body, &opts); err != nil {
+	var spec otf.WorkspaceSpec
+	if err := DecodeRoute(&spec, r); err != nil {
 		WriteError(w, http.StatusUnprocessableEntity, err)
 		return
-	}
-	if err := opts.Validate(); err != nil {
-		WriteError(w, http.StatusUnprocessableEntity, err)
-		return
-	}
-	spec := otf.WorkspaceSpec{
-		ID: otf.String(vars["id"]),
 	}
 	obj, err := s.WorkspaceService().Update(r.Context(), spec, otf.WorkspaceUpdateOptions{
 		AllowDestroyPlan:           opts.AllowDestroyPlan,

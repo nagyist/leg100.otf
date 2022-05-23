@@ -9,26 +9,9 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/gorilla/schema"
 	"github.com/leg100/jsonapi"
 	"github.com/leg100/otf"
 )
-
-var (
-	// Query schema encoder, caches structs, and safe for sharing
-	encoder = schema.NewEncoder()
-
-	// Query schema decoder: caches structs, and safe for sharing.
-	decoder = schema.NewDecoder()
-)
-
-// DecodeQuery unmarshals a query string (k1=v1&k2=v2...) into a struct.
-func DecodeQuery(opts interface{}, query url.Values) error {
-	if err := decoder.Decode(opts, query); err != nil {
-		return fmt.Errorf("unable to decode query string: %w", err)
-	}
-	return nil
-}
 
 // WithCode is a helper func for writing an HTTP status code to a response
 // stream.  For use with WriteResponse.
