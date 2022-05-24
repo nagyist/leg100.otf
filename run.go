@@ -16,7 +16,6 @@ const (
 	// DefaultRefresh specifies that the state be refreshed prior to running a
 	// plan
 	DefaultRefresh = true
-
 	// List all available run statuses supported in OTF.
 	RunApplied            RunStatus = "applied"
 	RunApplyQueued        RunStatus = "apply_queued"
@@ -99,19 +98,19 @@ func (r *Run) StatusTimestamps() []RunStatusTimestamp { return r.statusTimestamp
 
 // Discard updates the state of a run to reflect it having been discarded.
 func (r *Run) Discard() error {
-	if !r.IsDiscardable() {
+	if !r.Discardable() {
 		return ErrRunDiscardNotAllowed
 	}
-	r.UpdateStatus(RunDiscarded)
+	r.updateStatus(RunDiscarded)
 	return nil
 }
 
 // Cancel run.
 func (r *Run) Cancel() error {
-	if !r.IsCancelable() {
+	if !r.Cancelable() {
 		return ErrRunCancelNotAllowed
 	}
-	r.UpdateStatus(RunCanceled)
+	r.updateStatus(RunCanceled)
 	return nil
 }
 
@@ -130,14 +129,14 @@ func (r *Run) ForceCancelAvailableAt() time.Time {
 // ForceCancel updates the state of a run to reflect it having been forcefully
 // cancelled.
 func (r *Run) ForceCancel() error {
-	if !r.IsForceCancelable() {
+	if !r.ForceCancelable() {
 		return ErrRunForceCancelNotAllowed
 	}
-	return r.UpdateStatus(RunForceCanceled)
+	return r.updateStatus(RunForceCanceled)
 }
 
-// IsCancelable determines whether run can be cancelled.
-func (r *Run) IsCancelable() bool {
+// Cancelable determines whether run can be cancelled.
+func (r *Run) Cancelable() bool {
 	switch r.Status() {
 	case RunPending, RunPlanQueued, RunPlanning, RunApplyQueued, RunApplying:
 		return true
@@ -146,8 +145,8 @@ func (r *Run) IsCancelable() bool {
 	}
 }
 
-// IsConfirmable determines whether run can be confirmed.
-func (r *Run) IsConfirmable() bool {
+// Confirmable determines whether run can be confirmed.
+func (r *Run) Confirmable() bool {
 	switch r.Status() {
 	case RunPlanned:
 		return true
@@ -156,8 +155,8 @@ func (r *Run) IsConfirmable() bool {
 	}
 }
 
-// IsDiscardable determines whether run can be discarded.
-func (r *Run) IsDiscardable() bool {
+// Discardable determines whether run can be discarded.
+func (r *Run) Discardable() bool {
 	switch r.Status() {
 	case RunPending, RunPlanned:
 		return true
@@ -166,8 +165,8 @@ func (r *Run) IsDiscardable() bool {
 	}
 }
 
-// IsForceCancelable determines whether a run can be forcibly cancelled.
-func (r *Run) IsForceCancelable() bool {
+// ForceCancelable determines whether a run can be forcibly cancelled.
+func (r *Run) ForceCancelable() bool {
 	availAt := r.ForceCancelAvailableAt()
 	if availAt.IsZero() {
 		return false
@@ -175,18 +174,18 @@ func (r *Run) IsForceCancelable() bool {
 	return CurrentTimestamp().After(availAt)
 }
 
-// IsActive determines whether run is currently the active run on a workspace,
+// Active determines whether run is currently the active run on a workspace,
 // i.e. it is neither finished nor pending
-func (r *Run) IsActive() bool {
-	if r.IsDone() || r.Status() == RunPending {
+func (r *Run) Active() bool {
+	if r.Done() || r.Status() == RunPending {
 		return false
 	}
 	return true
 }
 
-// IsDone determines whether run has reached an end state, e.g. applied,
+// Done determines whether run has reached an end state, e.g. applied,
 // discarded, etc.
-func (r *Run) IsDone() bool {
+func (r *Run) Done() bool {
 	switch r.Status() {
 	case RunApplied, RunPlannedAndFinished, RunDiscarded, RunCanceled, RunErrored:
 		return true
@@ -200,15 +199,16 @@ func (r *Run) Speculative() bool {
 }
 
 func (r *Run) ApplyRun() error {
-	return r.UpdateStatus(RunApplyQueued)
+	return r.updateStatus(RunApplyQueued)
 }
 
 func (r *Run) EnqueuePlan() error {
-	return r.UpdateStatus(RunPlanQueued)
+	return r.updateStatus(RunPlanQueued)
 }
 
-// UpdateStatus updates the status of the run as well as its plan and apply
-func (r *Run) UpdateStatus(status RunStatus) error {
+// updateStatus transitions the state - changes to a run are made only via this
+// method.
+func (r *Run) updateStatus(status RunStatus) error {
 	switch status {
 	case RunPending:
 		r.Plan.updateStatus(PlanPending)
@@ -321,16 +321,13 @@ func (r *Run) downloadState(ctx context.Context, env Environment) error {
 	} else if err != nil {
 		return fmt.Errorf("retrieving current state version: %w", err)
 	}
-
 	statefile, err := env.StateVersionService().Download(state.ID())
 	if err != nil {
 		return fmt.Errorf("downloading state version: %w", err)
 	}
-
 	if err := os.WriteFile(filepath.Join(env.Path(), LocalStateFilename), statefile, 0644); err != nil {
 		return fmt.Errorf("saving state to local disk: %w", err)
 	}
-
 	return nil
 }
 
@@ -375,12 +372,10 @@ func (r *Run) uploadState(ctx context.Context, env Environment) error {
 	if err != nil {
 		return err
 	}
-
 	state, err := Parse(stateFile)
 	if err != nil {
 		return err
 	}
-
 	_, err = env.StateVersionService().Create(r.Workspace.ID(), StateVersionCreateOptions{
 		State:   String(base64.StdEncoding.EncodeToString(stateFile)),
 		MD5:     String(fmt.Sprintf("%x", md5.Sum(stateFile))),
@@ -391,7 +386,6 @@ func (r *Run) uploadState(ctx context.Context, env Environment) error {
 	if err != nil {
 		return err
 	}
-
 	return nil
 }
 
@@ -523,17 +517,13 @@ func (o *RunGetOptions) String() string {
 // RunListOptions are options for paginating and filtering a list of runs
 type RunListOptions struct {
 	ListOptions
-
 	// A list of relations to include. See available resources:
 	// https://www.terraform.io/docs/cloud/api/run.html#available-related-resources
 	Include *string `schema:"include"`
-
 	// Filter by run statuses (with an implicit OR condition)
 	Statuses []RunStatus
-
 	// Filter by workspace ID
 	WorkspaceID *string `schema:"workspace_id"`
-
 	// Filter by organization and workspace name. Mutually exclusive with
 	// WorkspaceID.
 	OrganizationName *string `schema:"organization_name"`

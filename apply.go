@@ -102,7 +102,7 @@ func (a *Apply) Start() error {
 		return fmt.Errorf("run cannot be started: invalid status: %s", a.run.Status())
 	}
 
-	a.run.UpdateStatus(RunApplying)
+	a.run.updateStatus(RunApplying)
 
 	return nil
 }
@@ -110,7 +110,7 @@ func (a *Apply) Start() error {
 // Finish updates the run to reflect its apply having finished. An event is
 // returned reflecting the run's new status.
 func (a *Apply) Finish() error {
-	return a.run.UpdateStatus(RunApplied)
+	return a.run.updateStatus(RunApplied)
 }
 
 func (a *Apply) StatusTimestamps() []ApplyStatusTimestamp { return a.statusTimestamps }

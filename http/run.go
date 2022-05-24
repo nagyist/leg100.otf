@@ -194,10 +194,10 @@ func RunDTO(req *http.Request, r *otf.Run) *dto.Run {
 	result := &dto.Run{
 		ID: r.ID(),
 		Actions: &dto.RunActions{
-			IsCancelable:      r.IsCancelable(),
-			IsConfirmable:     r.IsConfirmable(),
-			IsForceCancelable: r.IsForceCancelable(),
-			IsDiscardable:     r.IsDiscardable(),
+			IsCancelable:      r.Cancelable(),
+			IsConfirmable:     r.Confirmable(),
+			IsForceCancelable: r.ForceCancelable(),
+			IsDiscardable:     r.Discardable(),
 		},
 		CreatedAt:              r.CreatedAt(),
 		ForceCancelAvailableAt: r.ForceCancelAvailableAt(),

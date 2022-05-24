@@ -123,7 +123,7 @@ func (p *Plan) Start(run *Run) error {
 		return fmt.Errorf("run cannot be started: invalid status: %s", run.Status())
 	}
 
-	run.UpdateStatus(RunPlanning)
+	run.updateStatus(RunPlanning)
 
 	return nil
 }
@@ -132,26 +132,26 @@ func (p *Plan) Start(run *Run) error {
 // returned reflecting the run's new status.
 func (p *Plan) Finish(opts JobFinishOptions) (*Event, error) {
 	if opts.Errored {
-		if err := p.run.UpdateStatus(RunErrored); err != nil {
+		if err := p.run.updateStatus(RunErrored); err != nil {
 			return nil, err
 		}
 		return &Event{Payload: p.run, Type: EventRunErrored}, nil
 	}
 	if !p.HasChanges() || p.run.Speculative() {
-		if err := p.run.UpdateStatus(RunPlannedAndFinished); err != nil {
+		if err := p.run.updateStatus(RunPlannedAndFinished); err != nil {
 			return nil, err
 		}
 		return &Event{Payload: p.run, Type: EventRunPlannedAndFinished}, nil
 	}
 
 	if !p.run.autoApply {
-		if err := p.run.UpdateStatus(RunPlanned); err != nil {
+		if err := p.run.updateStatus(RunPlanned); err != nil {
 			return nil, err
 		}
 		return &Event{Payload: p.run, Type: EventRunPlanned}, nil
 	}
 
-	if err := p.run.UpdateStatus(RunApplyQueued); err != nil {
+	if err := p.run.updateStatus(RunApplyQueued); err != nil {
 		return nil, err
 	}
 	return &Event{Type: EventApplyQueued, Payload: p.run}, nil
