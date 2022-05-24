@@ -35,16 +35,12 @@ type ApplyLogStore interface {
 // Apply represents a terraform apply
 type Apply struct {
 	id string
-
 	// ResourcesReport is a report of applied resource changes
 	*ResourceReport
-
 	// Status is the current status
 	status ApplyStatus
-
 	// StatusTimestamps records timestamps of status transitions
 	statusTimestamps []ApplyStatusTimestamp
-
 	// run is the parent run
 	run *Run
 }
@@ -76,19 +72,15 @@ func (a *Apply) Do(env Environment) error {
 	if err := a.run.setupEnv(env); err != nil {
 		return err
 	}
-
 	if err := env.RunFunc(a.run.downloadPlanFile); err != nil {
 		return err
 	}
-
 	if err := env.RunCLI("sh", "-c", fmt.Sprintf("terraform apply %s | tee %s", PlanFilename, ApplyOutputFilename)); err != nil {
 		return err
 	}
-
 	if err := env.RunFunc(a.run.uploadState); err != nil {
 		return err
 	}
-
 	return nil
 }
 
@@ -97,13 +89,10 @@ func (a *Apply) Start() error {
 	if a.run.Status() == RunApplying {
 		return ErrJobAlreadyClaimed
 	}
-
 	if a.run.Status() != RunApplyQueued {
 		return fmt.Errorf("run cannot be started: invalid status: %s", a.run.Status())
 	}
-
 	a.run.updateStatus(RunApplying)
-
 	return nil
 }
 

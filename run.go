@@ -349,11 +349,9 @@ func (r *Run) uploadJSONPlan(ctx context.Context, env Environment) error {
 	if err != nil {
 		return err
 	}
-
 	if err := env.RunService().UploadPlanFile(ctx, r.ID(), jsonFile, PlanFormatJSON); err != nil {
 		return fmt.Errorf("unable to upload JSON plan: %w", err)
 	}
-
 	return nil
 }
 
