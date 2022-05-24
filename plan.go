@@ -137,7 +137,7 @@ func (p *Plan) Finish(opts JobFinishOptions) (*Event, error) {
 		}
 		return &Event{Payload: p.run, Type: EventRunErrored}, nil
 	}
-	if !p.HasChanges() || p.run.IsSpeculative() {
+	if !p.HasChanges() || p.run.Speculative() {
 		if err := p.run.UpdateStatus(RunPlannedAndFinished); err != nil {
 			return nil, err
 		}
@@ -159,9 +159,10 @@ func (p *Plan) Finish(opts JobFinishOptions) (*Event, error) {
 
 func (p *Plan) StatusTimestamps() []PlanStatusTimestamp { return p.statusTimestamps }
 
-func (p *Plan) AddStatusTimestamp(status PlanStatus, timestamp time.Time) {
+func (p *Plan) updateStatus(status PlanStatus) {
+	p.status = status
 	p.statusTimestamps = append(p.statusTimestamps, PlanStatusTimestamp{
 		Status:    status,
-		Timestamp: timestamp,
+		Timestamp: CurrentTimestamp(),
 	})
 }

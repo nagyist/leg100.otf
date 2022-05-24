@@ -199,7 +199,7 @@ func RunDTO(req *http.Request, r *otf.Run) *dto.Run {
 			IsForceCancelable: r.IsForceCancelable(),
 			IsDiscardable:     r.IsDiscardable(),
 		},
-		CreatedAt:              r.CreatedAt,
+		CreatedAt:              r.CreatedAt(),
 		ForceCancelAvailableAt: r.ForceCancelAvailableAt(),
 		HasChanges:             r.Plan.HasChanges(),
 		IsDestroy:              r.IsDestroy(),

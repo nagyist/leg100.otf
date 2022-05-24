@@ -115,9 +115,10 @@ func (a *Apply) Finish() error {
 
 func (a *Apply) StatusTimestamps() []ApplyStatusTimestamp { return a.statusTimestamps }
 
-func (a *Apply) AddStatusTimestamp(status ApplyStatus, timestamp time.Time) {
+func (a *Apply) updateStatus(status ApplyStatus) {
+	a.status = status
 	a.statusTimestamps = append(a.statusTimestamps, ApplyStatusTimestamp{
 		Status:    status,
-		Timestamp: timestamp,
+		Timestamp: CurrentTimestamp(),
 	})
 }
