@@ -7,6 +7,7 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/leg100/jsonapi"
 	"github.com/leg100/otf"
+	"github.com/leg100/otf/http/decode"
 	"github.com/leg100/otf/http/dto"
 )
 
@@ -46,18 +47,15 @@ func (s *Server) GetOrganization(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) ListOrganizations(w http.ResponseWriter, r *http.Request) {
 	var opts otf.OrganizationListOptions
-
-	if err := DecodeQuery(&opts, r.URL.Query()); err != nil {
+	if err := decode.Query(&opts, r.URL.Query()); err != nil {
 		WriteError(w, http.StatusUnprocessableEntity, err)
 		return
 	}
-
 	obj, err := s.OrganizationService().List(context.Background(), opts)
 	if err != nil {
 		WriteError(w, http.StatusNotFound, err)
 		return
 	}
-
 	WriteResponse(w, r, OrganizationListDTO(obj))
 }
 

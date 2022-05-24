@@ -6,14 +6,15 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/leg100/jsonapi"
 	"github.com/leg100/otf"
+	"github.com/leg100/otf/http/decode"
 	"github.com/leg100/otf/http/dto"
 )
 
 func (s *Server) CreateWorkspace(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-
-	opts := dto.WorkspaceCreateOptions{
-		Organization: vars["org"],
+	var opts dto.WorkspaceCreateOptions
+	if err := decode.Route(&opts, r); err != nil {
+		WriteError(w, http.StatusUnprocessableEntity, err)
+		return
 	}
 	if err := jsonapi.UnmarshalPayload(r.Body, &opts); err != nil {
 		WriteError(w, http.StatusUnprocessableEntity, err)
@@ -23,7 +24,6 @@ func (s *Server) CreateWorkspace(w http.ResponseWriter, r *http.Request) {
 		WriteError(w, http.StatusUnprocessableEntity, err)
 		return
 	}
-
 	obj, err := s.WorkspaceService().Create(r.Context(), otf.WorkspaceCreateOptions{
 		AllowDestroyPlan:           opts.AllowDestroyPlan,
 		AutoApply:                  opts.AutoApply,
@@ -33,7 +33,7 @@ func (s *Server) CreateWorkspace(w http.ResponseWriter, r *http.Request) {
 		GlobalRemoteState:          opts.GlobalRemoteState,
 		MigrationEnvironment:       opts.MigrationEnvironment,
 		Name:                       *opts.Name,
-		OrganizationName:           vars["org"],
+		OrganizationName:           opts.Organization,
 		QueueAllRuns:               opts.QueueAllRuns,
 		SpeculativeEnabled:         opts.SpeculativeEnabled,
 		SourceName:                 opts.SourceName,
@@ -47,17 +47,16 @@ func (s *Server) CreateWorkspace(w http.ResponseWriter, r *http.Request) {
 		WriteError(w, http.StatusNotFound, err)
 		return
 	}
-
 	WriteResponse(w, r, WorkspaceDTO(obj), WithCode(http.StatusCreated))
 }
 
 func (s *Server) GetWorkspace(w http.ResponseWriter, r *http.Request) {
 	var spec otf.WorkspaceSpec
-	if err := DecodeQuery(&spec, r.URL.Query()); err != nil {
+	if err := decode.Query(&spec, r.URL.Query()); err != nil {
 		WriteError(w, http.StatusUnprocessableEntity, err)
 		return
 	}
-	if err := DecodeRoute(&spec, r); err != nil {
+	if err := decode.Route(&spec, r); err != nil {
 		WriteError(w, http.StatusUnprocessableEntity, err)
 		return
 	}
@@ -71,11 +70,11 @@ func (s *Server) GetWorkspace(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) ListWorkspaces(w http.ResponseWriter, r *http.Request) {
 	var opts otf.WorkspaceListOptions
-	if err := DecodeQuery(&opts, r.URL.Query()); err != nil {
+	if err := decode.Query(&opts, r.URL.Query()); err != nil {
 		WriteError(w, http.StatusUnprocessableEntity, err)
 		return
 	}
-	if err := DecodeRoute(&opts, r); err != nil {
+	if err := decode.Route(&opts, r); err != nil {
 		WriteError(w, http.StatusUnprocessableEntity, err)
 		return
 	}
@@ -98,7 +97,7 @@ func (s *Server) UpdateWorkspace(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	var spec otf.WorkspaceSpec
-	if err := DecodeRoute(&spec, r); err != nil {
+	if err := decode.Route(&spec, r); err != nil {
 		WriteError(w, http.StatusUnprocessableEntity, err)
 		return
 	}

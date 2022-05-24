@@ -9,6 +9,7 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/leg100/jsonapi"
 	"github.com/leg100/otf"
+	"github.com/leg100/otf/http/decode"
 	"github.com/leg100/otf/http/dto"
 )
 
@@ -44,19 +45,16 @@ func (s *Server) GetConfigurationVersion(w http.ResponseWriter, r *http.Request)
 
 func (s *Server) ListConfigurationVersions(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-
 	var opts otf.ConfigurationVersionListOptions
-	if err := DecodeQuery(&opts, r.URL.Query()); err != nil {
+	if err := decode.Query(&opts, r.URL.Query()); err != nil {
 		WriteError(w, http.StatusUnprocessableEntity, err)
 		return
 	}
-
 	obj, err := s.ConfigurationVersionService().List(vars["workspace_id"], opts)
 	if err != nil {
 		WriteError(w, http.StatusNotFound, err)
 		return
 	}
-
 	WriteResponse(w, r, s.ConfigurationVersionListJSONAPIObject(obj))
 }
 
