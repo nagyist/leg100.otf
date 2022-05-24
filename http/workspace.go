@@ -12,15 +12,15 @@ import (
 func (s *Server) CreateWorkspace(w http.ResponseWriter, r *http.Request) {
 	var opts dto.WorkspaceCreateOptions
 	if err := decode.Route(&opts, r); err != nil {
-		WriteError(w, http.StatusUnprocessableEntity, err)
+		writeError(w, http.StatusUnprocessableEntity, err)
 		return
 	}
 	if err := jsonapi.UnmarshalPayload(r.Body, &opts); err != nil {
-		WriteError(w, http.StatusUnprocessableEntity, err)
+		writeError(w, http.StatusUnprocessableEntity, err)
 		return
 	}
 	if err := opts.Validate(); err != nil {
-		WriteError(w, http.StatusUnprocessableEntity, err)
+		writeError(w, http.StatusUnprocessableEntity, err)
 		return
 	}
 	obj, err := s.WorkspaceService().Create(r.Context(), otf.WorkspaceCreateOptions{
@@ -43,61 +43,61 @@ func (s *Server) CreateWorkspace(w http.ResponseWriter, r *http.Request) {
 		WorkingDirectory:           opts.WorkingDirectory,
 	})
 	if err != nil {
-		WriteError(w, http.StatusNotFound, err)
+		writeError(w, http.StatusNotFound, err)
 		return
 	}
-	WriteResponse(w, r, WorkspaceDTO(obj), WithCode(http.StatusCreated))
+	writeResponse(w, r, WorkspaceDTO(obj), withCode(http.StatusCreated))
 }
 
 func (s *Server) GetWorkspace(w http.ResponseWriter, r *http.Request) {
 	var spec otf.WorkspaceSpec
 	if err := decode.Query(&spec, r.URL.Query()); err != nil {
-		WriteError(w, http.StatusUnprocessableEntity, err)
+		writeError(w, http.StatusUnprocessableEntity, err)
 		return
 	}
 	if err := decode.Route(&spec, r); err != nil {
-		WriteError(w, http.StatusUnprocessableEntity, err)
+		writeError(w, http.StatusUnprocessableEntity, err)
 		return
 	}
 	obj, err := s.WorkspaceService().Get(r.Context(), spec)
 	if err != nil {
-		WriteError(w, http.StatusNotFound, err)
+		writeError(w, http.StatusNotFound, err)
 		return
 	}
-	WriteResponse(w, r, WorkspaceDTO(obj))
+	writeResponse(w, r, WorkspaceDTO(obj))
 }
 
 func (s *Server) ListWorkspaces(w http.ResponseWriter, r *http.Request) {
 	var opts otf.WorkspaceListOptions
 	if err := decode.Query(&opts, r.URL.Query()); err != nil {
-		WriteError(w, http.StatusUnprocessableEntity, err)
+		writeError(w, http.StatusUnprocessableEntity, err)
 		return
 	}
 	if err := decode.Route(&opts, r); err != nil {
-		WriteError(w, http.StatusUnprocessableEntity, err)
+		writeError(w, http.StatusUnprocessableEntity, err)
 		return
 	}
 	obj, err := s.WorkspaceService().List(r.Context(), opts)
 	if err != nil {
-		WriteError(w, http.StatusNotFound, err)
+		writeError(w, http.StatusNotFound, err)
 		return
 	}
-	WriteResponse(w, r, WorkspaceListJSONAPIObject(obj))
+	writeResponse(w, r, WorkspaceListJSONAPIObject(obj))
 }
 
 func (s *Server) UpdateWorkspace(w http.ResponseWriter, r *http.Request) {
 	opts := dto.WorkspaceUpdateOptions{}
 	if err := jsonapi.UnmarshalPayload(r.Body, &opts); err != nil {
-		WriteError(w, http.StatusUnprocessableEntity, err)
+		writeError(w, http.StatusUnprocessableEntity, err)
 		return
 	}
 	if err := opts.Validate(); err != nil {
-		WriteError(w, http.StatusUnprocessableEntity, err)
+		writeError(w, http.StatusUnprocessableEntity, err)
 		return
 	}
 	var spec otf.WorkspaceSpec
 	if err := decode.Route(&spec, r); err != nil {
-		WriteError(w, http.StatusUnprocessableEntity, err)
+		writeError(w, http.StatusUnprocessableEntity, err)
 		return
 	}
 	obj, err := s.WorkspaceService().Update(r.Context(), spec, otf.WorkspaceUpdateOptions{
@@ -116,60 +116,59 @@ func (s *Server) UpdateWorkspace(w http.ResponseWriter, r *http.Request) {
 		WorkingDirectory:           opts.WorkingDirectory,
 	})
 	if err != nil {
-		WriteError(w, http.StatusNotFound, err)
+		writeError(w, http.StatusNotFound, err)
 		return
 	}
-
-	WriteResponse(w, r, WorkspaceDTO(obj))
+	writeResponse(w, r, WorkspaceDTO(obj))
 }
 
 func (s *Server) LockWorkspace(w http.ResponseWriter, r *http.Request) {
 	opts := otf.WorkspaceLockOptions{}
 	if err := jsonapi.UnmarshalPayload(r.Body, &opts); err != nil {
-		WriteError(w, http.StatusUnprocessableEntity, err)
+		writeError(w, http.StatusUnprocessableEntity, err)
 		return
 	}
 	var spec otf.WorkspaceSpec
 	if err := decode.Route(&spec, r); err != nil {
-		WriteError(w, http.StatusUnprocessableEntity, err)
+		writeError(w, http.StatusUnprocessableEntity, err)
 		return
 	}
 	obj, err := s.WorkspaceService().Lock(r.Context(), spec, opts)
 	if err == otf.ErrWorkspaceAlreadyLocked {
-		WriteError(w, http.StatusConflict, err)
+		writeError(w, http.StatusConflict, err)
 		return
 	} else if err != nil {
-		WriteError(w, http.StatusNotFound, err)
+		writeError(w, http.StatusNotFound, err)
 		return
 	}
-	WriteResponse(w, r, WorkspaceDTO(obj))
+	writeResponse(w, r, WorkspaceDTO(obj))
 }
 
 func (s *Server) UnlockWorkspace(w http.ResponseWriter, r *http.Request) {
 	var spec otf.WorkspaceSpec
 	if err := decode.Route(&spec, r); err != nil {
-		WriteError(w, http.StatusUnprocessableEntity, err)
+		writeError(w, http.StatusUnprocessableEntity, err)
 		return
 	}
 	obj, err := s.WorkspaceService().Unlock(r.Context(), spec)
 	if err == otf.ErrWorkspaceAlreadyUnlocked {
-		WriteError(w, http.StatusConflict, err)
+		writeError(w, http.StatusConflict, err)
 		return
 	} else if err != nil {
-		WriteError(w, http.StatusNotFound, err)
+		writeError(w, http.StatusNotFound, err)
 		return
 	}
-	WriteResponse(w, r, WorkspaceDTO(obj))
+	writeResponse(w, r, WorkspaceDTO(obj))
 }
 
 func (s *Server) DeleteWorkspace(w http.ResponseWriter, r *http.Request) {
 	var spec otf.WorkspaceSpec
 	if err := decode.Route(&spec, r); err != nil {
-		WriteError(w, http.StatusUnprocessableEntity, err)
+		writeError(w, http.StatusUnprocessableEntity, err)
 		return
 	}
 	if err := s.WorkspaceService().Delete(r.Context(), spec); err != nil {
-		WriteError(w, http.StatusNotFound, err)
+		writeError(w, http.StatusNotFound, err)
 		return
 	}
 	w.WriteHeader(http.StatusNoContent)

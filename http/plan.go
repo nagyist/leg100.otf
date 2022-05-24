@@ -22,26 +22,22 @@ type PlanFileOptions struct {
 
 func (s *Server) GetPlan(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-
 	obj, err := s.PlanService().Get(vars["id"])
 	if err != nil {
-		WriteError(w, http.StatusNotFound, err)
+		writeError(w, http.StatusNotFound, err)
 		return
 	}
-
-	WriteResponse(w, r, PlanDTO(r, obj))
+	writeResponse(w, r, PlanDTO(r, obj))
 }
 
 func (s *Server) GetPlanJSON(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	id := vars["id"]
-
 	json, err := s.RunService().GetPlanFile(r.Context(), otf.RunGetOptions{PlanID: &id}, otf.PlanFormatJSON)
 	if err != nil {
-		WriteError(w, http.StatusNotFound, err)
+		writeError(w, http.StatusNotFound, err)
 		return
 	}
-
 	if _, err := w.Write(json); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -52,12 +48,12 @@ func (s *Server) GetPlanLogs(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	var opts otf.GetChunkOptions
 	if err := decode.Query(&opts, r.URL.Query()); err != nil {
-		WriteError(w, http.StatusUnprocessableEntity, err)
+		writeError(w, http.StatusUnprocessableEntity, err)
 		return
 	}
 	chunk, err := s.PlanService().GetChunk(r.Context(), vars["id"], opts)
 	if err != nil {
-		WriteError(w, http.StatusNotFound, err)
+		writeError(w, http.StatusNotFound, err)
 		return
 	}
 	if _, err := w.Write(chunk.Marshal()); err != nil {
@@ -70,12 +66,12 @@ func (s *Server) UploadPlanLogs(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	buf := new(bytes.Buffer)
 	if _, err := io.Copy(buf, r.Body); err != nil {
-		WriteError(w, http.StatusUnprocessableEntity, err)
+		writeError(w, http.StatusUnprocessableEntity, err)
 		return
 	}
 	var opts otf.PutChunkOptions
 	if err := decode.Query(&opts, r.URL.Query()); err != nil {
-		WriteError(w, http.StatusUnprocessableEntity, err)
+		writeError(w, http.StatusUnprocessableEntity, err)
 		return
 	}
 	chunk := otf.Chunk{
@@ -84,7 +80,7 @@ func (s *Server) UploadPlanLogs(w http.ResponseWriter, r *http.Request) {
 		End:   opts.End,
 	}
 	if err := s.PlanService().PutChunk(r.Context(), vars["id"], chunk); err != nil {
-		WriteError(w, http.StatusNotFound, err)
+		writeError(w, http.StatusNotFound, err)
 		return
 	}
 }
@@ -103,7 +99,6 @@ func PlanDTO(r *http.Request, p *otf.Plan) *dto.Plan {
 		result.ResourceChanges = p.Changes
 		result.ResourceDestructions = p.Destructions
 	}
-
 	for _, ts := range p.StatusTimestamps() {
 		if result.StatusTimestamps == nil {
 			result.StatusTimestamps = &dto.PlanStatusTimestamps{}
@@ -121,6 +116,5 @@ func PlanDTO(r *http.Request, p *otf.Plan) *dto.Plan {
 			result.StatusTimestamps.StartedAt = &ts.Timestamp
 		}
 	}
-
 	return result
 }
