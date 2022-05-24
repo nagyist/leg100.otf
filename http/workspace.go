@@ -3,7 +3,6 @@ package http
 import (
 	"net/http"
 
-	"github.com/gorilla/mux"
 	"github.com/leg100/jsonapi"
 	"github.com/leg100/otf"
 	"github.com/leg100/otf/http/decode"
@@ -125,19 +124,16 @@ func (s *Server) UpdateWorkspace(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) LockWorkspace(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-
 	opts := otf.WorkspaceLockOptions{}
 	if err := jsonapi.UnmarshalPayload(r.Body, &opts); err != nil {
 		WriteError(w, http.StatusUnprocessableEntity, err)
 		return
 	}
-
-	id := vars["id"]
-	spec := otf.WorkspaceSpec{
-		ID: &id,
+	var spec otf.WorkspaceSpec
+	if err := decode.Route(&spec, r); err != nil {
+		WriteError(w, http.StatusUnprocessableEntity, err)
+		return
 	}
-
 	obj, err := s.WorkspaceService().Lock(r.Context(), spec, opts)
 	if err == otf.ErrWorkspaceAlreadyLocked {
 		WriteError(w, http.StatusConflict, err)
@@ -146,18 +142,15 @@ func (s *Server) LockWorkspace(w http.ResponseWriter, r *http.Request) {
 		WriteError(w, http.StatusNotFound, err)
 		return
 	}
-
 	WriteResponse(w, r, WorkspaceDTO(obj))
 }
 
 func (s *Server) UnlockWorkspace(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-
-	id := vars["id"]
-	spec := otf.WorkspaceSpec{
-		ID: &id,
+	var spec otf.WorkspaceSpec
+	if err := decode.Route(&spec, r); err != nil {
+		WriteError(w, http.StatusUnprocessableEntity, err)
+		return
 	}
-
 	obj, err := s.WorkspaceService().Unlock(r.Context(), spec)
 	if err == otf.ErrWorkspaceAlreadyUnlocked {
 		WriteError(w, http.StatusConflict, err)
@@ -166,34 +159,19 @@ func (s *Server) UnlockWorkspace(w http.ResponseWriter, r *http.Request) {
 		WriteError(w, http.StatusNotFound, err)
 		return
 	}
-
 	WriteResponse(w, r, WorkspaceDTO(obj))
 }
 
 func (s *Server) DeleteWorkspace(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	spec := otf.WorkspaceSpec{
-		Name:             otf.String(vars["name"]),
-		OrganizationName: otf.String(vars["org"]),
+	var spec otf.WorkspaceSpec
+	if err := decode.Route(&spec, r); err != nil {
+		WriteError(w, http.StatusUnprocessableEntity, err)
+		return
 	}
-
 	if err := s.WorkspaceService().Delete(r.Context(), spec); err != nil {
 		WriteError(w, http.StatusNotFound, err)
 		return
 	}
-
-	w.WriteHeader(http.StatusNoContent)
-}
-
-func (s *Server) DeleteWorkspaceByID(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	spec := otf.WorkspaceSpec{ID: otf.String(vars["id"])}
-
-	if err := s.WorkspaceService().Delete(r.Context(), spec); err != nil {
-		WriteError(w, http.StatusNotFound, err)
-		return
-	}
-
 	w.WriteHeader(http.StatusNoContent)
 }
 

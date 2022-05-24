@@ -134,12 +134,12 @@ func NewServer(logger logr.Logger, cfg ServerConfig, app otf.Application, db otf
 	// Workspace routes
 	sub.HandleFunc("/organizations/{organization_name}/workspaces", s.ListWorkspaces).Methods("GET")
 	sub.HandleFunc("/organizations/{organization_name}/workspaces/{workspace_name}", s.GetWorkspace).Methods("GET")
-	sub.HandleFunc("/organizations/{org}/workspaces", s.CreateWorkspace).Methods("POST")
+	sub.HandleFunc("/organizations/{organization_name}/workspaces", s.CreateWorkspace).Methods("POST")
 	sub.HandleFunc("/organizations/{organization_name}/workspaces/{workspace_name}", s.UpdateWorkspace).Methods("PATCH")
-	sub.HandleFunc("/organizations/{org}/workspaces/{name}", s.DeleteWorkspace).Methods("DELETE")
+	sub.HandleFunc("/organizations/{organization_name}/workspaces/{workspace_name}", s.DeleteWorkspace).Methods("DELETE")
 	sub.HandleFunc("/workspaces/{id}", s.UpdateWorkspace).Methods("PATCH")
 	sub.HandleFunc("/workspaces/{id}", s.GetWorkspace).Methods("GET")
-	sub.HandleFunc("/workspaces/{id}", s.DeleteWorkspaceByID).Methods("DELETE")
+	sub.HandleFunc("/workspaces/{id}", s.DeleteWorkspace).Methods("DELETE")
 	sub.HandleFunc("/workspaces/{id}/actions/lock", s.LockWorkspace).Methods("POST")
 	sub.HandleFunc("/workspaces/{id}/actions/unlock", s.UnlockWorkspace).Methods("POST")
 

@@ -15,31 +15,26 @@ import (
 
 func (s *Server) CreateConfigurationVersion(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-
 	opts := otf.ConfigurationVersionCreateOptions{}
 	if err := jsonapi.UnmarshalPayload(r.Body, &opts); err != nil {
 		WriteError(w, http.StatusUnprocessableEntity, err)
 		return
 	}
-
 	obj, err := s.ConfigurationVersionService().Create(vars["workspace_id"], opts)
 	if err != nil {
 		WriteError(w, http.StatusNotFound, err)
 		return
 	}
-
 	WriteResponse(w, r, ConfigurationVersionDTO(obj), WithCode(http.StatusCreated))
 }
 
 func (s *Server) GetConfigurationVersion(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-
 	obj, err := s.ConfigurationVersionService().Get(vars["id"])
 	if err != nil {
 		WriteError(w, http.StatusNotFound, err)
 		return
 	}
-
 	WriteResponse(w, r, ConfigurationVersionDTO(obj))
 }
 
@@ -60,13 +55,11 @@ func (s *Server) ListConfigurationVersions(w http.ResponseWriter, r *http.Reques
 
 func (s *Server) UploadConfigurationVersion(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-
 	buf := new(bytes.Buffer)
 	if _, err := io.Copy(buf, r.Body); err != nil {
 		WriteError(w, http.StatusUnprocessableEntity, err)
 		return
 	}
-
 	if err := s.ConfigurationVersionService().Upload(vars["id"], buf.Bytes()); err != nil {
 		WriteError(w, http.StatusNotFound, err)
 		return

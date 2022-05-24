@@ -46,13 +46,11 @@ func (s *Server) CreateRun(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) GetRun(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-
 	obj, err := s.RunService().Get(context.Background(), vars["id"])
 	if err != nil {
 		WriteError(w, http.StatusNotFound, err)
 		return
 	}
-
 	WriteResponse(w, r, RunDTO(r, obj))
 }
 
@@ -275,6 +273,5 @@ func RunListDTO(req *http.Request, l *otf.RunList) *dto.RunList {
 	for _, item := range l.Items {
 		obj.Items = append(obj.Items, RunDTO(req, item))
 	}
-
 	return obj
 }
