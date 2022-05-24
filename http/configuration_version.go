@@ -76,7 +76,6 @@ func ConfigurationVersionDTO(cv *otf.ConfigurationVersion) *dto.ConfigurationVer
 		Status:        string(cv.Status()),
 		UploadURL:     fmt.Sprintf(string(UploadConfigurationVersionRoute), cv.ID()),
 	}
-
 	for _, ts := range cv.StatusTimestamps() {
 		if obj.StatusTimestamps == nil {
 			obj.StatusTimestamps = &dto.CVStatusTimestamps{}
@@ -90,7 +89,6 @@ func ConfigurationVersionDTO(cv *otf.ConfigurationVersion) *dto.ConfigurationVer
 			obj.StatusTimestamps.StartedAt = &ts.Timestamp
 		}
 	}
-
 	return obj
 }
 
@@ -104,6 +102,5 @@ func (s *Server) ConfigurationVersionListJSONAPIObject(cvl *otf.ConfigurationVer
 	for _, item := range cvl.Items {
 		obj.Items = append(obj.Items, ConfigurationVersionDTO(item))
 	}
-
 	return obj
 }
