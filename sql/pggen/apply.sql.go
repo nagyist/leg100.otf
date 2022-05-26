@@ -286,20 +286,6 @@ type Querier interface {
 	// InsertRunStatusTimestampScan scans the result of an executed InsertRunStatusTimestampBatch query.
 	InsertRunStatusTimestampScan(results pgx.BatchResults) (pgconn.CommandTag, error)
 
-	InsertPlannedChanges(ctx context.Context, params InsertPlannedChangesParams) (pgconn.CommandTag, error)
-	// InsertPlannedChangesBatch enqueues a InsertPlannedChanges query into batch to be executed
-	// later by the batch.
-	InsertPlannedChangesBatch(batch genericBatch, params InsertPlannedChangesParams)
-	// InsertPlannedChangesScan scans the result of an executed InsertPlannedChangesBatch query.
-	InsertPlannedChangesScan(results pgx.BatchResults) (pgconn.CommandTag, error)
-
-	InsertAppliedChanges(ctx context.Context, params InsertAppliedChangesParams) (pgconn.CommandTag, error)
-	// InsertAppliedChangesBatch enqueues a InsertAppliedChanges query into batch to be executed
-	// later by the batch.
-	InsertAppliedChangesBatch(batch genericBatch, params InsertAppliedChangesParams)
-	// InsertAppliedChangesScan scans the result of an executed InsertAppliedChangesBatch query.
-	InsertAppliedChangesScan(results pgx.BatchResults) (pgconn.CommandTag, error)
-
 	FindRuns(ctx context.Context, params FindRunsParams) ([]FindRunsRow, error)
 	// FindRunsBatch enqueues a FindRuns query into batch to be executed
 	// later by the batch.
@@ -348,6 +334,20 @@ type Querier interface {
 	UpdateRunStatusBatch(batch genericBatch, status string, id string)
 	// UpdateRunStatusScan scans the result of an executed UpdateRunStatusBatch query.
 	UpdateRunStatusScan(results pgx.BatchResults) (string, error)
+
+	UpdateRunPlannedChangesByPlanID(ctx context.Context, params UpdateRunPlannedChangesByPlanIDParams) (pgconn.CommandTag, error)
+	// UpdateRunPlannedChangesByPlanIDBatch enqueues a UpdateRunPlannedChangesByPlanID query into batch to be executed
+	// later by the batch.
+	UpdateRunPlannedChangesByPlanIDBatch(batch genericBatch, params UpdateRunPlannedChangesByPlanIDParams)
+	// UpdateRunPlannedChangesByPlanIDScan scans the result of an executed UpdateRunPlannedChangesByPlanIDBatch query.
+	UpdateRunPlannedChangesByPlanIDScan(results pgx.BatchResults) (pgconn.CommandTag, error)
+
+	UpdateRunAppliedChangesByApplyID(ctx context.Context, params UpdateRunAppliedChangesByApplyIDParams) (pgconn.CommandTag, error)
+	// UpdateRunAppliedChangesByApplyIDBatch enqueues a UpdateRunAppliedChangesByApplyID query into batch to be executed
+	// later by the batch.
+	UpdateRunAppliedChangesByApplyIDBatch(batch genericBatch, params UpdateRunAppliedChangesByApplyIDParams)
+	// UpdateRunAppliedChangesByApplyIDScan scans the result of an executed UpdateRunAppliedChangesByApplyIDBatch query.
+	UpdateRunAppliedChangesByApplyIDScan(results pgx.BatchResults) (pgconn.CommandTag, error)
 
 	DeleteRunByID(ctx context.Context, runID string) (pgconn.CommandTag, error)
 	// DeleteRunByIDBatch enqueues a DeleteRunByID query into batch to be executed
@@ -822,12 +822,6 @@ func PrepareAllQueries(ctx context.Context, p preparer) error {
 	if _, err := p.Prepare(ctx, insertRunStatusTimestampSQL, insertRunStatusTimestampSQL); err != nil {
 		return fmt.Errorf("prepare query 'InsertRunStatusTimestamp': %w", err)
 	}
-	if _, err := p.Prepare(ctx, insertPlannedChangesSQL, insertPlannedChangesSQL); err != nil {
-		return fmt.Errorf("prepare query 'InsertPlannedChanges': %w", err)
-	}
-	if _, err := p.Prepare(ctx, insertAppliedChangesSQL, insertAppliedChangesSQL); err != nil {
-		return fmt.Errorf("prepare query 'InsertAppliedChanges': %w", err)
-	}
 	if _, err := p.Prepare(ctx, findRunsSQL, findRunsSQL); err != nil {
 		return fmt.Errorf("prepare query 'FindRuns': %w", err)
 	}
@@ -848,6 +842,12 @@ func PrepareAllQueries(ctx context.Context, p preparer) error {
 	}
 	if _, err := p.Prepare(ctx, updateRunStatusSQL, updateRunStatusSQL); err != nil {
 		return fmt.Errorf("prepare query 'UpdateRunStatus': %w", err)
+	}
+	if _, err := p.Prepare(ctx, updateRunPlannedChangesByPlanIDSQL, updateRunPlannedChangesByPlanIDSQL); err != nil {
+		return fmt.Errorf("prepare query 'UpdateRunPlannedChangesByPlanID': %w", err)
+	}
+	if _, err := p.Prepare(ctx, updateRunAppliedChangesByApplyIDSQL, updateRunAppliedChangesByApplyIDSQL); err != nil {
+		return fmt.Errorf("prepare query 'UpdateRunAppliedChangesByApplyID': %w", err)
 	}
 	if _, err := p.Prepare(ctx, deleteRunByIDSQL, deleteRunByIDSQL); err != nil {
 		return fmt.Errorf("prepare query 'DeleteRunByID': %w", err)
@@ -972,14 +972,6 @@ func PrepareAllQueries(ctx context.Context, p preparer) error {
 	return nil
 }
 
-// AppliedChanges represents the Postgres composite type "applied_changes".
-type AppliedChanges struct {
-	ApplyID      string `json:"apply_id"`
-	Additions    int    `json:"additions"`
-	Changes      int    `json:"changes"`
-	Destructions int    `json:"destructions"`
-}
-
 // ApplyStatusTimestamps represents the Postgres composite type "apply_status_timestamps".
 type ApplyStatusTimestamps struct {
 	RunID     string    `json:"run_id"`
@@ -1021,14 +1013,6 @@ type PlanStatusTimestamps struct {
 	RunID     string    `json:"run_id"`
 	Status    string    `json:"status"`
 	Timestamp time.Time `json:"timestamp"`
-}
-
-// PlannedChanges represents the Postgres composite type "planned_changes".
-type PlannedChanges struct {
-	PlanID       string `json:"plan_id"`
-	Additions    int    `json:"additions"`
-	Changes      int    `json:"changes"`
-	Destructions int    `json:"destructions"`
 }
 
 // RunStatusTimestamps represents the Postgres composite type "run_status_timestamps".
@@ -1180,18 +1164,6 @@ func (tr *typeResolver) newArrayValue(name, elemName string, defaultVal func() p
 	return typ
 }
 
-// newAppliedChanges creates a new pgtype.ValueTranscoder for the Postgres
-// composite type 'applied_changes'.
-func (tr *typeResolver) newAppliedChanges() pgtype.ValueTranscoder {
-	return tr.newCompositeValue(
-		"applied_changes",
-		compositeField{"apply_id", "text", &pgtype.Text{}},
-		compositeField{"additions", "int4", &pgtype.Int4{}},
-		compositeField{"changes", "int4", &pgtype.Int4{}},
-		compositeField{"destructions", "int4", &pgtype.Int4{}},
-	)
-}
-
 // newApplyStatusTimestamps creates a new pgtype.ValueTranscoder for the Postgres
 // composite type 'apply_status_timestamps'.
 func (tr *typeResolver) newApplyStatusTimestamps() pgtype.ValueTranscoder {
@@ -1252,18 +1224,6 @@ func (tr *typeResolver) newPlanStatusTimestamps() pgtype.ValueTranscoder {
 		compositeField{"run_id", "text", &pgtype.Text{}},
 		compositeField{"status", "text", &pgtype.Text{}},
 		compositeField{"timestamp", "timestamptz", &pgtype.Timestamptz{}},
-	)
-}
-
-// newPlannedChanges creates a new pgtype.ValueTranscoder for the Postgres
-// composite type 'planned_changes'.
-func (tr *typeResolver) newPlannedChanges() pgtype.ValueTranscoder {
-	return tr.newCompositeValue(
-		"planned_changes",
-		compositeField{"plan_id", "text", &pgtype.Text{}},
-		compositeField{"additions", "int4", &pgtype.Int4{}},
-		compositeField{"changes", "int4", &pgtype.Int4{}},
-		compositeField{"destructions", "int4", &pgtype.Int4{}},
 	)
 }
 

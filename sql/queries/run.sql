@@ -13,6 +13,12 @@ INSERT INTO runs (
     apply_status,
     replace_addrs,
     target_addrs,
+    planned_additions,
+    planned_changes,
+    planned_destructions,
+    applied_additions,
+    applied_changes,
+    applied_destructions,
     configuration_version_id,
     workspace_id
 ) VALUES (
@@ -29,6 +35,12 @@ INSERT INTO runs (
     pggen.arg('ApplyStatus'),
     pggen.arg('ReplaceAddrs'),
     pggen.arg('TargetAddrs'),
+    pggen.arg('PlannedAdditions'),
+    pggen.arg('PlannedChanges'),
+    pggen.arg('PlannedDestructions'),
+    pggen.arg('AppliedAdditions'),
+    pggen.arg('AppliedChanges'),
+    pggen.arg('AppliedDestructions'),
     pggen.arg('ConfigurationVersionID'),
     pggen.arg('WorkspaceID')
 );
@@ -42,32 +54,6 @@ INSERT INTO run_status_timestamps (
     pggen.arg('ID'),
     pggen.arg('Status'),
     pggen.arg('Timestamp')
-);
-
--- name: InsertPlannedChanges :exec
-INSERT INTO planned_changes (
-    plan_id,
-    additions,
-    changes,
-    destructions
-) VALUES (
-    pggen.arg('plan_id'),
-    pggen.arg('additions'),
-    pggen.arg('changes'),
-    pggen.arg('destructions')
-);
-
--- name: InsertAppliedChanges :exec
-INSERT INTO applied_changes (
-    apply_id,
-    additions,
-    changes,
-    destructions
-) VALUES (
-    pggen.arg('apply_id'),
-    pggen.arg('additions'),
-    pggen.arg('changes'),
-    pggen.arg('destructions')
 );
 
 -- name: FindRuns :many
@@ -85,12 +71,16 @@ SELECT
     runs.apply_status,
     runs.replace_addrs,
     runs.target_addrs,
+    runs.planned_additions,
+    runs.planned_changes,
+    runs.planned_destructions,
+    runs.applied_additions,
+    runs.applied_changes,
+    runs.applied_destructions,
     runs.configuration_version_id,
     runs.workspace_id,
     configuration_versions.speculative,
     workspaces.auto_apply,
-    (planned_changes.*)::"planned_changes" AS planned_changes,
-    (applied_changes.*)::"applied_changes" AS applied_changes,
     CASE WHEN pggen.arg('include_configuration_version') THEN (configuration_versions.*)::"configuration_versions" END AS configuration_version,
     CASE WHEN pggen.arg('include_workspace') THEN (workspaces.*)::"workspaces" END AS workspace,
     (
@@ -115,8 +105,6 @@ FROM runs
 JOIN configuration_versions USING(workspace_id)
 JOIN workspaces USING(workspace_id)
 JOIN organizations USING(organization_id)
-LEFT JOIN planned_changes USING(plan_id)
-LEFT JOIN applied_changes USING(apply_id)
 WHERE runs.workspace_id LIKE ANY(pggen.arg('workspace_ids'))
 AND runs.status LIKE ANY(pggen.arg('statuses'))
 ORDER BY runs.created_at ASC
@@ -145,12 +133,16 @@ SELECT
     runs.apply_status,
     runs.replace_addrs,
     runs.target_addrs,
+    runs.planned_additions,
+    runs.planned_changes,
+    runs.planned_destructions,
+    runs.applied_additions,
+    runs.applied_changes,
+    runs.applied_destructions,
     runs.configuration_version_id,
     runs.workspace_id,
     configuration_versions.speculative,
     workspaces.auto_apply,
-    (planned_changes.*)::"planned_changes" AS planned_changes,
-    (applied_changes.*)::"applied_changes" AS applied_changes,
     CASE WHEN pggen.arg('include_configuration_version') THEN (configuration_versions.*)::"configuration_versions" END AS configuration_version,
     CASE WHEN pggen.arg('include_workspace') THEN (workspaces.*)::"workspaces" END AS workspace,
     (
@@ -172,8 +164,6 @@ SELECT
         GROUP BY run_id
     ) AS apply_status_timestamps
 FROM runs
-LEFT JOIN planned_changes USING(plan_id)
-LEFT JOIN applied_changes USING(apply_id)
 JOIN configuration_versions USING(workspace_id)
 JOIN workspaces USING(workspace_id)
 WHERE runs.run_id = pggen.arg('run_id')
@@ -206,12 +196,16 @@ SELECT
     runs.apply_status,
     runs.replace_addrs,
     runs.target_addrs,
+    runs.planned_additions,
+    runs.planned_changes,
+    runs.planned_destructions,
+    runs.applied_additions,
+    runs.applied_changes,
+    runs.applied_destructions,
     runs.configuration_version_id,
     runs.workspace_id,
     configuration_versions.speculative,
     workspaces.auto_apply,
-    NULL::"planned_changes" AS planned_changes,
-    NULL::"applied_changes" AS applied_changes,
     CASE WHEN pggen.arg('include_configuration_version') THEN (configuration_versions.*)::"configuration_versions" END AS configuration_version,
     CASE WHEN pggen.arg('include_workspace') THEN (workspaces.*)::"workspaces" END AS workspace,
     (
@@ -246,6 +240,22 @@ SET
 WHERE run_id = pggen.arg('id')
 RETURNING run_id
 ;
+
+-- name: UpdateRunPlannedChangesByPlanID :exec
+UPDATE runs
+SET
+    planned_additions = pggen.arg('additions'),
+    planned_changes = pggen.arg('changes'),
+    planned_destructions = pggen.arg('destructions')
+WHERE plan_id = pggen.arg('plan_id');
+
+-- name: UpdateRunAppliedChangesByApplyID :exec
+UPDATE runs
+SET
+    applied_additions = pggen.arg('additions'),
+    applied_changes = pggen.arg('changes'),
+    applied_destructions = pggen.arg('destructions')
+WHERE apply_id = pggen.arg('apply_id');
 
 -- name: DeleteRunByID :exec
 DELETE

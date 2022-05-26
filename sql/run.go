@@ -44,6 +44,12 @@ func (db RunDB) Create(run *otf.Run) error {
 		ApplyStatus:            string(run.Apply.Status()),
 		ReplaceAddrs:           run.ReplaceAddrs(),
 		TargetAddrs:            run.TargetAddrs(),
+		PlannedAdditions:       0,
+		PlannedChanges:         0,
+		PlannedDestructions:    0,
+		AppliedAdditions:       0,
+		AppliedChanges:         0,
+		AppliedDestructions:    0,
 		ConfigurationVersionID: run.ConfigurationVersion.ID(),
 		WorkspaceID:            run.Workspace.ID(),
 	})
@@ -142,7 +148,7 @@ func (db RunDB) CreatePlanReport(planID string, report otf.ResourceReport) error
 	q := pggen.NewQuerier(db.Pool)
 	ctx := context.Background()
 
-	_, err := q.InsertPlannedChanges(ctx, pggen.InsertPlannedChangesParams{
+	_, err := q.UpdateRunPlannedChangesByPlanID(ctx, pggen.UpdateRunPlannedChangesByPlanIDParams{
 		PlanID:       planID,
 		Additions:    report.Additions,
 		Changes:      report.Changes,
@@ -158,7 +164,7 @@ func (db RunDB) CreateApplyReport(applyID string, report otf.ResourceReport) err
 	q := pggen.NewQuerier(db.Pool)
 	ctx := context.Background()
 
-	_, err := q.InsertAppliedChanges(ctx, pggen.InsertAppliedChangesParams{
+	_, err := q.UpdateRunAppliedChangesByApplyID(ctx, pggen.UpdateRunAppliedChangesByApplyIDParams{
 		ApplyID:      applyID,
 		Additions:    report.Additions,
 		Changes:      report.Changes,

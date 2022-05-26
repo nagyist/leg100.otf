@@ -153,6 +153,12 @@ CREATE TABLE IF NOT EXISTS runs (
     target_addrs                    TEXT[],
     plan_bin                        BYTEA,
     plan_json                       BYTEA,
+    planned_additions               INTEGER         NOT NULL,
+    planned_changes                 INTEGER         NOT NULL,
+    planned_destructions            INTEGER         NOT NULL,
+    applied_additions               INTEGER         NOT NULL,
+    applied_changes                 INTEGER         NOT NULL,
+    applied_destructions            INTEGER         NOT NULL,
     status                          TEXT REFERENCES run_statuses  NOT NULL,
     plan_status                     TEXT REFERENCES plan_statuses NOT NULL,
     apply_status                    TEXT REFERENCES plan_statuses NOT NULL,
@@ -161,22 +167,6 @@ CREATE TABLE IF NOT EXISTS runs (
                                     PRIMARY KEY (run_id),
                                     UNIQUE (plan_id),
                                     UNIQUE (apply_id)
-);
-
-CREATE TABLE IF NOT EXISTS planned_changes (
-    plan_id         TEXT REFERENCES runs (plan_id) ON UPDATE CASCADE ON DELETE CASCADE NOT NULL,
-    additions       INTEGER NOT NULL,
-    changes         INTEGER NOT NULL,
-    destructions    INTEGER NOT NULL,
-                    UNIQUE (plan_id)
-);
-
-CREATE TABLE IF NOT EXISTS applied_changes (
-    apply_id        TEXT REFERENCES runs (apply_id) ON UPDATE CASCADE ON DELETE CASCADE NOT NULL,
-    additions       INTEGER NOT NULL,
-    changes         INTEGER NOT NULL,
-    destructions    INTEGER NOT NULL,
-                    UNIQUE (apply_id)
 );
 
 CREATE TABLE IF NOT EXISTS run_status_timestamps (
@@ -241,8 +231,6 @@ DROP TABLE IF EXISTS plan_logs;
 DROP TABLE IF EXISTS apply_status_timestamps;
 DROP TABLE IF EXISTS plan_status_timestamps;
 DROP TABLE IF EXISTS run_status_timestamps;
-DROP TABLE IF EXISTS planned_changes;
-DROP TABLE IF EXISTS applied_changes;
 DROP TABLE IF EXISTS runs;
 DROP TABLE IF EXISTS apply_statuses;
 DROP TABLE IF EXISTS plan_statuses;
