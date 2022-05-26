@@ -241,21 +241,25 @@ WHERE run_id = pggen.arg('id')
 RETURNING run_id
 ;
 
--- name: UpdateRunPlannedChangesByPlanID :exec
+-- name: UpdateRunPlannedChangesByPlanID :one
 UPDATE runs
 SET
     planned_additions = pggen.arg('additions'),
     planned_changes = pggen.arg('changes'),
     planned_destructions = pggen.arg('destructions')
-WHERE plan_id = pggen.arg('plan_id');
+WHERE plan_id = pggen.arg('plan_id')
+RETURNING plan_id
+;
 
--- name: UpdateRunAppliedChangesByApplyID :exec
+-- name: UpdateRunAppliedChangesByApplyID :one
 UPDATE runs
 SET
     applied_additions = pggen.arg('additions'),
     applied_changes = pggen.arg('changes'),
     applied_destructions = pggen.arg('destructions')
-WHERE apply_id = pggen.arg('apply_id');
+WHERE apply_id = pggen.arg('apply_id')
+RETURNING plan_id
+;
 
 -- name: DeleteRunByID :exec
 DELETE

@@ -766,7 +766,9 @@ SET
     planned_additions = $1,
     planned_changes = $2,
     planned_destructions = $3
-WHERE plan_id = $4;`
+WHERE plan_id = $4
+RETURNING plan_id
+;`
 
 type UpdateRunPlannedChangesByPlanIDParams struct {
 	Additions    int
@@ -776,13 +778,14 @@ type UpdateRunPlannedChangesByPlanIDParams struct {
 }
 
 // UpdateRunPlannedChangesByPlanID implements Querier.UpdateRunPlannedChangesByPlanID.
-func (q *DBQuerier) UpdateRunPlannedChangesByPlanID(ctx context.Context, params UpdateRunPlannedChangesByPlanIDParams) (pgconn.CommandTag, error) {
+func (q *DBQuerier) UpdateRunPlannedChangesByPlanID(ctx context.Context, params UpdateRunPlannedChangesByPlanIDParams) (string, error) {
 	ctx = context.WithValue(ctx, "pggen_query_name", "UpdateRunPlannedChangesByPlanID")
-	cmdTag, err := q.conn.Exec(ctx, updateRunPlannedChangesByPlanIDSQL, params.Additions, params.Changes, params.Destructions, params.PlanID)
-	if err != nil {
-		return cmdTag, fmt.Errorf("exec query UpdateRunPlannedChangesByPlanID: %w", err)
+	row := q.conn.QueryRow(ctx, updateRunPlannedChangesByPlanIDSQL, params.Additions, params.Changes, params.Destructions, params.PlanID)
+	var item string
+	if err := row.Scan(&item); err != nil {
+		return item, fmt.Errorf("query UpdateRunPlannedChangesByPlanID: %w", err)
 	}
-	return cmdTag, err
+	return item, nil
 }
 
 // UpdateRunPlannedChangesByPlanIDBatch implements Querier.UpdateRunPlannedChangesByPlanIDBatch.
@@ -791,12 +794,13 @@ func (q *DBQuerier) UpdateRunPlannedChangesByPlanIDBatch(batch genericBatch, par
 }
 
 // UpdateRunPlannedChangesByPlanIDScan implements Querier.UpdateRunPlannedChangesByPlanIDScan.
-func (q *DBQuerier) UpdateRunPlannedChangesByPlanIDScan(results pgx.BatchResults) (pgconn.CommandTag, error) {
-	cmdTag, err := results.Exec()
-	if err != nil {
-		return cmdTag, fmt.Errorf("exec UpdateRunPlannedChangesByPlanIDBatch: %w", err)
+func (q *DBQuerier) UpdateRunPlannedChangesByPlanIDScan(results pgx.BatchResults) (string, error) {
+	row := results.QueryRow()
+	var item string
+	if err := row.Scan(&item); err != nil {
+		return item, fmt.Errorf("scan UpdateRunPlannedChangesByPlanIDBatch row: %w", err)
 	}
-	return cmdTag, err
+	return item, nil
 }
 
 const updateRunAppliedChangesByApplyIDSQL = `UPDATE runs
@@ -804,7 +808,9 @@ SET
     applied_additions = $1,
     applied_changes = $2,
     applied_destructions = $3
-WHERE apply_id = $4;`
+WHERE apply_id = $4
+RETURNING plan_id
+;`
 
 type UpdateRunAppliedChangesByApplyIDParams struct {
 	Additions    int
@@ -814,13 +820,14 @@ type UpdateRunAppliedChangesByApplyIDParams struct {
 }
 
 // UpdateRunAppliedChangesByApplyID implements Querier.UpdateRunAppliedChangesByApplyID.
-func (q *DBQuerier) UpdateRunAppliedChangesByApplyID(ctx context.Context, params UpdateRunAppliedChangesByApplyIDParams) (pgconn.CommandTag, error) {
+func (q *DBQuerier) UpdateRunAppliedChangesByApplyID(ctx context.Context, params UpdateRunAppliedChangesByApplyIDParams) (string, error) {
 	ctx = context.WithValue(ctx, "pggen_query_name", "UpdateRunAppliedChangesByApplyID")
-	cmdTag, err := q.conn.Exec(ctx, updateRunAppliedChangesByApplyIDSQL, params.Additions, params.Changes, params.Destructions, params.ApplyID)
-	if err != nil {
-		return cmdTag, fmt.Errorf("exec query UpdateRunAppliedChangesByApplyID: %w", err)
+	row := q.conn.QueryRow(ctx, updateRunAppliedChangesByApplyIDSQL, params.Additions, params.Changes, params.Destructions, params.ApplyID)
+	var item string
+	if err := row.Scan(&item); err != nil {
+		return item, fmt.Errorf("query UpdateRunAppliedChangesByApplyID: %w", err)
 	}
-	return cmdTag, err
+	return item, nil
 }
 
 // UpdateRunAppliedChangesByApplyIDBatch implements Querier.UpdateRunAppliedChangesByApplyIDBatch.
@@ -829,12 +836,13 @@ func (q *DBQuerier) UpdateRunAppliedChangesByApplyIDBatch(batch genericBatch, pa
 }
 
 // UpdateRunAppliedChangesByApplyIDScan implements Querier.UpdateRunAppliedChangesByApplyIDScan.
-func (q *DBQuerier) UpdateRunAppliedChangesByApplyIDScan(results pgx.BatchResults) (pgconn.CommandTag, error) {
-	cmdTag, err := results.Exec()
-	if err != nil {
-		return cmdTag, fmt.Errorf("exec UpdateRunAppliedChangesByApplyIDBatch: %w", err)
+func (q *DBQuerier) UpdateRunAppliedChangesByApplyIDScan(results pgx.BatchResults) (string, error) {
+	row := results.QueryRow()
+	var item string
+	if err := row.Scan(&item); err != nil {
+		return item, fmt.Errorf("scan UpdateRunAppliedChangesByApplyIDBatch row: %w", err)
 	}
-	return cmdTag, err
+	return item, nil
 }
 
 const deleteRunByIDSQL = `DELETE
