@@ -23,12 +23,12 @@ type RunDBResult struct {
 	ApplyStatus            string                        `json:"apply_status"`
 	ReplaceAddrs           []string                      `json:"replace_addrs"`
 	TargetAddrs            []string                      `json:"target_addrs"`
-	PlannedChanges         *pggen.ResourceReport         `json:"planned_changes"`
-	AppliedChanges         *pggen.ResourceReport         `json:"applied_changes"`
 	ConfigurationVersionID string                        `json:"configuration_version_id"`
 	WorkspaceID            string                        `json:"workspace_id"`
 	Speculative            bool                          `json:"speculative"`
 	AutoApply              bool                          `json:"auto_apply"`
+	PlannedChanges         *pggen.PlannedChanges         `json:"planned_changes"`
+	AppliedChanges         *pggen.AppliedChanges         `json:"applied_changes"`
 	ConfigurationVersion   *pggen.ConfigurationVersions  `json:"configuration_version"`
 	Workspace              *pggen.Workspaces             `json:"workspace"`
 	RunStatusTimestamps    []pggen.RunStatusTimestamps   `json:"run_status_timestamps"`
@@ -53,15 +53,28 @@ func UnmarshalRunDBResult(result RunDBResult) (*Run, error) {
 		Plan: &Plan{
 			id:               result.PlanID,
 			status:           PlanStatus(result.PlanStatus),
-			ResourceReport:   unmarshalResourceReportDBType(result.PlannedChanges),
 			statusTimestamps: unmarshalPlanStatusTimestampDBTypes(result.PlanStatusTimestamps),
 		},
 		Apply: &Apply{
 			id:               result.ApplyID,
 			status:           ApplyStatus(result.ApplyStatus),
-			ResourceReport:   unmarshalResourceReportDBType(result.AppliedChanges),
 			statusTimestamps: unmarshalApplyStatusTimestampDBTypes(result.ApplyStatusTimestamps),
 		},
+	}
+	if result.PlannedChanges != nil {
+		run.Plan.ResourceReport = &ResourceReport{
+			Additions:    result.PlannedChanges.Additions,
+			Changes:      result.PlannedChanges.Changes,
+			Destructions: result.PlannedChanges.Destructions,
+		}
+	}
+
+	if result.AppliedChanges != nil {
+		run.Apply.ResourceReport = &ResourceReport{
+			Additions:    result.AppliedChanges.Additions,
+			Changes:      result.AppliedChanges.Changes,
+			Destructions: result.AppliedChanges.Destructions,
+		}
 	}
 	run.Plan.run = &run
 	run.Apply.run = &run
@@ -88,18 +101,6 @@ func UnmarshalRunDBResult(result RunDBResult) (*Run, error) {
 	}
 
 	return &run, nil
-}
-
-func unmarshalResourceReportDBType(typ *pggen.ResourceReport) *ResourceReport {
-	if typ == nil {
-		return nil
-	}
-
-	return &ResourceReport{
-		Additions:    typ.Additions,
-		Changes:      typ.Changes,
-		Destructions: typ.Destructions,
-	}
 }
 
 func unmarshalRunStatusTimestampDBTypes(typs []pggen.RunStatusTimestamps) (timestamps []RunStatusTimestamp) {

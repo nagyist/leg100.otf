@@ -167,14 +167,16 @@ CREATE TABLE IF NOT EXISTS planned_changes (
     plan_id         TEXT REFERENCES runs (plan_id) ON UPDATE CASCADE ON DELETE CASCADE NOT NULL,
     additions       INTEGER NOT NULL,
     changes         INTEGER NOT NULL,
-    destructions    INTEGER NOT NULL
+    destructions    INTEGER NOT NULL,
+                    UNIQUE (plan_id)
 );
 
 CREATE TABLE IF NOT EXISTS applied_changes (
     apply_id        TEXT REFERENCES runs (apply_id) ON UPDATE CASCADE ON DELETE CASCADE NOT NULL,
     additions       INTEGER NOT NULL,
     changes         INTEGER NOT NULL,
-    destructions    INTEGER NOT NULL
+    destructions    INTEGER NOT NULL,
+                    UNIQUE (apply_id)
 );
 
 CREATE TABLE IF NOT EXISTS run_status_timestamps (
@@ -236,18 +238,15 @@ DROP TABLE IF EXISTS state_version_outputs;
 DROP TABLE IF EXISTS state_versions;
 DROP TABLE IF EXISTS apply_logs;
 DROP TABLE IF EXISTS plan_logs;
-DROP TABLE IF EXISTS plan_resource_reports;
-DROP TABLE IF EXISTS apply_resource_reports;
-DROP TABLE IF EXISTS plan_resources_reports;
-DROP TABLE IF EXISTS apply_resources_reports;
 DROP TABLE IF EXISTS apply_status_timestamps;
 DROP TABLE IF EXISTS plan_status_timestamps;
 DROP TABLE IF EXISTS run_status_timestamps;
+DROP TABLE IF EXISTS planned_changes;
+DROP TABLE IF EXISTS applied_changes;
 DROP TABLE IF EXISTS runs;
 DROP TABLE IF EXISTS apply_statuses;
 DROP TABLE IF EXISTS plan_statuses;
 DROP TABLE IF EXISTS run_statuses;
-DROP TYPE resource_report;
 DROP TABLE IF EXISTS configuration_version_status_timestamps;
 DROP TABLE IF EXISTS configuration_versions;
 DROP TABLE IF EXISTS tokens;
