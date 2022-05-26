@@ -140,12 +140,6 @@ INSERT INTO apply_statuses (status) VALUES
     ('running'),
     ('unreachable');
 
-CREATE TYPE resource_report AS (
-    additions       INTEGER,
-    changes         INTEGER,
-    destructions    INTEGER
-);
-
 CREATE TABLE IF NOT EXISTS runs (
     run_id                          TEXT,
     plan_id                         TEXT            NOT NULL,
@@ -159,8 +153,6 @@ CREATE TABLE IF NOT EXISTS runs (
     target_addrs                    TEXT[],
     plan_bin                        BYTEA,
     plan_json                       BYTEA,
-    planned_changes                 RESOURCE_REPORT,
-    applied_changes                 RESOURCE_REPORT,
     status                          TEXT REFERENCES run_statuses  NOT NULL,
     plan_status                     TEXT REFERENCES plan_statuses NOT NULL,
     apply_status                    TEXT REFERENCES plan_statuses NOT NULL,
@@ -169,6 +161,20 @@ CREATE TABLE IF NOT EXISTS runs (
                                     PRIMARY KEY (run_id),
                                     UNIQUE (plan_id),
                                     UNIQUE (apply_id)
+);
+
+CREATE TABLE IF NOT EXISTS planned_changes (
+    plan_id         TEXT REFERENCES runs (plan_id) ON UPDATE CASCADE ON DELETE CASCADE NOT NULL,
+    additions       INTEGER NOT NULL,
+    changes         INTEGER NOT NULL,
+    destructions    INTEGER NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS applied_changes (
+    apply_id        TEXT REFERENCES runs (apply_id) ON UPDATE CASCADE ON DELETE CASCADE NOT NULL,
+    additions       INTEGER NOT NULL,
+    changes         INTEGER NOT NULL,
+    destructions    INTEGER NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS run_status_timestamps (
