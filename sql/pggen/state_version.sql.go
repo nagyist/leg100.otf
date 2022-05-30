@@ -29,7 +29,7 @@ const insertStateVersionSQL = `INSERT INTO state_versions (
 type InsertStateVersionParams struct {
 	ID          pgtype.Text
 	CreatedAt   time.Time
-	Serial      int
+	Serial      pgtype.Int4
 	State       []byte
 	WorkspaceID pgtype.Text
 }
@@ -82,7 +82,7 @@ type FindStateVersionsByWorkspaceNameParams struct {
 type FindStateVersionsByWorkspaceNameRow struct {
 	StateVersionID      pgtype.Text           `json:"state_version_id"`
 	CreatedAt           time.Time             `json:"created_at"`
-	Serial              int                   `json:"serial"`
+	Serial              pgtype.Int4           `json:"serial"`
 	State               []byte                `json:"state"`
 	WorkspaceID         pgtype.Text           `json:"workspace_id"`
 	StateVersionOutputs []StateVersionOutputs `json:"state_version_outputs"`
@@ -190,7 +190,7 @@ GROUP BY state_versions.state_version_id
 type FindStateVersionByIDRow struct {
 	StateVersionID      pgtype.Text           `json:"state_version_id"`
 	CreatedAt           time.Time             `json:"created_at"`
-	Serial              int                   `json:"serial"`
+	Serial              pgtype.Int4           `json:"serial"`
 	State               []byte                `json:"state"`
 	WorkspaceID         pgtype.Text           `json:"workspace_id"`
 	StateVersionOutputs []StateVersionOutputs `json:"state_version_outputs"`
@@ -243,7 +243,7 @@ ORDER BY state_versions.serial DESC, state_versions.created_at DESC
 type FindStateVersionLatestByWorkspaceIDRow struct {
 	StateVersionID      pgtype.Text           `json:"state_version_id"`
 	CreatedAt           time.Time             `json:"created_at"`
-	Serial              int                   `json:"serial"`
+	Serial              pgtype.Int4           `json:"serial"`
 	State               []byte                `json:"state"`
 	WorkspaceID         pgtype.Text           `json:"workspace_id"`
 	StateVersionOutputs []StateVersionOutputs `json:"state_version_outputs"`

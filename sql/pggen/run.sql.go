@@ -18,7 +18,6 @@ const insertRunSQL = `INSERT INTO runs (
     apply_id,
     created_at,
     is_destroy,
-    position_in_queue,
     refresh,
     refresh_only,
     status,
@@ -26,12 +25,6 @@ const insertRunSQL = `INSERT INTO runs (
     apply_status,
     replace_addrs,
     target_addrs,
-    planned_additions,
-    planned_changes,
-    planned_destructions,
-    applied_additions,
-    applied_changes,
-    applied_destructions,
     configuration_version_id,
     workspace_id
 ) VALUES (
@@ -48,14 +41,7 @@ const insertRunSQL = `INSERT INTO runs (
     $11,
     $12,
     $13,
-    $14,
-    $15,
-    $16,
-    $17,
-    $18,
-    $19,
-    $20,
-    $21
+    $14
 );`
 
 type InsertRunParams struct {
@@ -64,7 +50,6 @@ type InsertRunParams struct {
 	ApplyID                pgtype.Text
 	CreatedAt              time.Time
 	IsDestroy              bool
-	PositionInQueue        int
 	Refresh                bool
 	RefreshOnly            bool
 	Status                 pgtype.Text
@@ -72,12 +57,6 @@ type InsertRunParams struct {
 	ApplyStatus            pgtype.Text
 	ReplaceAddrs           []string
 	TargetAddrs            []string
-	PlannedAdditions       int
-	PlannedChanges         int
-	PlannedDestructions    int
-	AppliedAdditions       int
-	AppliedChanges         int
-	AppliedDestructions    int
 	ConfigurationVersionID pgtype.Text
 	WorkspaceID            pgtype.Text
 }
@@ -85,7 +64,7 @@ type InsertRunParams struct {
 // InsertRun implements Querier.InsertRun.
 func (q *DBQuerier) InsertRun(ctx context.Context, params InsertRunParams) (pgconn.CommandTag, error) {
 	ctx = context.WithValue(ctx, "pggen_query_name", "InsertRun")
-	cmdTag, err := q.conn.Exec(ctx, insertRunSQL, params.ID, params.PlanID, params.ApplyID, params.CreatedAt, params.IsDestroy, params.PositionInQueue, params.Refresh, params.RefreshOnly, params.Status, params.PlanStatus, params.ApplyStatus, params.ReplaceAddrs, params.TargetAddrs, params.PlannedAdditions, params.PlannedChanges, params.PlannedDestructions, params.AppliedAdditions, params.AppliedChanges, params.AppliedDestructions, params.ConfigurationVersionID, params.WorkspaceID)
+	cmdTag, err := q.conn.Exec(ctx, insertRunSQL, params.ID, params.PlanID, params.ApplyID, params.CreatedAt, params.IsDestroy, params.Refresh, params.RefreshOnly, params.Status, params.PlanStatus, params.ApplyStatus, params.ReplaceAddrs, params.TargetAddrs, params.ConfigurationVersionID, params.WorkspaceID)
 	if err != nil {
 		return cmdTag, fmt.Errorf("exec query InsertRun: %w", err)
 	}
@@ -94,7 +73,7 @@ func (q *DBQuerier) InsertRun(ctx context.Context, params InsertRunParams) (pgco
 
 // InsertRunBatch implements Querier.InsertRunBatch.
 func (q *DBQuerier) InsertRunBatch(batch genericBatch, params InsertRunParams) {
-	batch.Queue(insertRunSQL, params.ID, params.PlanID, params.ApplyID, params.CreatedAt, params.IsDestroy, params.PositionInQueue, params.Refresh, params.RefreshOnly, params.Status, params.PlanStatus, params.ApplyStatus, params.ReplaceAddrs, params.TargetAddrs, params.PlannedAdditions, params.PlannedChanges, params.PlannedDestructions, params.AppliedAdditions, params.AppliedChanges, params.AppliedDestructions, params.ConfigurationVersionID, params.WorkspaceID)
+	batch.Queue(insertRunSQL, params.ID, params.PlanID, params.ApplyID, params.CreatedAt, params.IsDestroy, params.Refresh, params.RefreshOnly, params.Status, params.PlanStatus, params.ApplyStatus, params.ReplaceAddrs, params.TargetAddrs, params.ConfigurationVersionID, params.WorkspaceID)
 }
 
 // InsertRunScan implements Querier.InsertRunScan.
@@ -220,7 +199,7 @@ type FindRunsRow struct {
 	ApplyID                pgtype.Text             `json:"apply_id"`
 	CreatedAt              time.Time               `json:"created_at"`
 	IsDestroy              bool                    `json:"is_destroy"`
-	PositionInQueue        int                     `json:"position_in_queue"`
+	PositionInQueue        pgtype.Int4             `json:"position_in_queue"`
 	Refresh                bool                    `json:"refresh"`
 	RefreshOnly            bool                    `json:"refresh_only"`
 	Status                 pgtype.Text             `json:"status"`
@@ -228,12 +207,12 @@ type FindRunsRow struct {
 	ApplyStatus            pgtype.Text             `json:"apply_status"`
 	ReplaceAddrs           []string                `json:"replace_addrs"`
 	TargetAddrs            []string                `json:"target_addrs"`
-	PlannedAdditions       int                     `json:"planned_additions"`
-	PlannedChanges         int                     `json:"planned_changes"`
-	PlannedDestructions    int                     `json:"planned_destructions"`
-	AppliedAdditions       int                     `json:"applied_additions"`
-	AppliedChanges         int                     `json:"applied_changes"`
-	AppliedDestructions    int                     `json:"applied_destructions"`
+	PlannedAdditions       pgtype.Int4             `json:"planned_additions"`
+	PlannedChanges         pgtype.Int4             `json:"planned_changes"`
+	PlannedDestructions    pgtype.Int4             `json:"planned_destructions"`
+	AppliedAdditions       pgtype.Int4             `json:"applied_additions"`
+	AppliedChanges         pgtype.Int4             `json:"applied_changes"`
+	AppliedDestructions    pgtype.Int4             `json:"applied_destructions"`
 	ConfigurationVersionID pgtype.Text             `json:"configuration_version_id"`
 	WorkspaceID            pgtype.Text             `json:"workspace_id"`
 	Speculative            bool                    `json:"speculative"`
@@ -439,7 +418,7 @@ type FindRunByIDRow struct {
 	ApplyID                pgtype.Text             `json:"apply_id"`
 	CreatedAt              time.Time               `json:"created_at"`
 	IsDestroy              bool                    `json:"is_destroy"`
-	PositionInQueue        int                     `json:"position_in_queue"`
+	PositionInQueue        pgtype.Int4             `json:"position_in_queue"`
 	Refresh                bool                    `json:"refresh"`
 	RefreshOnly            bool                    `json:"refresh_only"`
 	Status                 pgtype.Text             `json:"status"`
@@ -447,12 +426,12 @@ type FindRunByIDRow struct {
 	ApplyStatus            pgtype.Text             `json:"apply_status"`
 	ReplaceAddrs           []string                `json:"replace_addrs"`
 	TargetAddrs            []string                `json:"target_addrs"`
-	PlannedAdditions       int                     `json:"planned_additions"`
-	PlannedChanges         int                     `json:"planned_changes"`
-	PlannedDestructions    int                     `json:"planned_destructions"`
-	AppliedAdditions       int                     `json:"applied_additions"`
-	AppliedChanges         int                     `json:"applied_changes"`
-	AppliedDestructions    int                     `json:"applied_destructions"`
+	PlannedAdditions       pgtype.Int4             `json:"planned_additions"`
+	PlannedChanges         pgtype.Int4             `json:"planned_changes"`
+	PlannedDestructions    pgtype.Int4             `json:"planned_destructions"`
+	AppliedAdditions       pgtype.Int4             `json:"applied_additions"`
+	AppliedChanges         pgtype.Int4             `json:"applied_changes"`
+	AppliedDestructions    pgtype.Int4             `json:"applied_destructions"`
 	ConfigurationVersionID pgtype.Text             `json:"configuration_version_id"`
 	WorkspaceID            pgtype.Text             `json:"workspace_id"`
 	Speculative            bool                    `json:"speculative"`
@@ -655,7 +634,7 @@ type FindRunByIDForUpdateRow struct {
 	ApplyID                pgtype.Text             `json:"apply_id"`
 	CreatedAt              time.Time               `json:"created_at"`
 	IsDestroy              bool                    `json:"is_destroy"`
-	PositionInQueue        int                     `json:"position_in_queue"`
+	PositionInQueue        pgtype.Int4             `json:"position_in_queue"`
 	Refresh                bool                    `json:"refresh"`
 	RefreshOnly            bool                    `json:"refresh_only"`
 	Status                 pgtype.Text             `json:"status"`
@@ -663,12 +642,12 @@ type FindRunByIDForUpdateRow struct {
 	ApplyStatus            pgtype.Text             `json:"apply_status"`
 	ReplaceAddrs           []string                `json:"replace_addrs"`
 	TargetAddrs            []string                `json:"target_addrs"`
-	PlannedAdditions       int                     `json:"planned_additions"`
-	PlannedChanges         int                     `json:"planned_changes"`
-	PlannedDestructions    int                     `json:"planned_destructions"`
-	AppliedAdditions       int                     `json:"applied_additions"`
-	AppliedChanges         int                     `json:"applied_changes"`
-	AppliedDestructions    int                     `json:"applied_destructions"`
+	PlannedAdditions       pgtype.Int4             `json:"planned_additions"`
+	PlannedChanges         pgtype.Int4             `json:"planned_changes"`
+	PlannedDestructions    pgtype.Int4             `json:"planned_destructions"`
+	AppliedAdditions       pgtype.Int4             `json:"applied_additions"`
+	AppliedChanges         pgtype.Int4             `json:"applied_changes"`
+	AppliedDestructions    pgtype.Int4             `json:"applied_destructions"`
 	ConfigurationVersionID pgtype.Text             `json:"configuration_version_id"`
 	WorkspaceID            pgtype.Text             `json:"workspace_id"`
 	Speculative            bool                    `json:"speculative"`
@@ -789,9 +768,9 @@ RETURNING plan_id
 ;`
 
 type UpdateRunPlannedChangesByPlanIDParams struct {
-	Additions    int
-	Changes      int
-	Destructions int
+	Additions    pgtype.Int4
+	Changes      pgtype.Int4
+	Destructions pgtype.Int4
 	PlanID       pgtype.Text
 }
 
@@ -831,9 +810,9 @@ RETURNING plan_id
 ;`
 
 type UpdateRunAppliedChangesByApplyIDParams struct {
-	Additions    int
-	Changes      int
-	Destructions int
+	Additions    pgtype.Int4
+	Changes      pgtype.Int4
+	Destructions pgtype.Int4
 	ApplyID      pgtype.Text
 }
 

@@ -45,12 +45,6 @@ func (db RunDB) Create(run *otf.Run) error {
 		ApplyStatus:            pgtype.Text{String: string(run.Apply.Status()), Status: pgtype.Present},
 		ReplaceAddrs:           run.ReplaceAddrs(),
 		TargetAddrs:            run.TargetAddrs(),
-		PlannedAdditions:       0,
-		PlannedChanges:         0,
-		PlannedDestructions:    0,
-		AppliedAdditions:       0,
-		AppliedChanges:         0,
-		AppliedDestructions:    0,
 		ConfigurationVersionID: pgtype.Text{String: run.ConfigurationVersion.ID(), Status: pgtype.Present},
 		WorkspaceID:            pgtype.Text{String: run.Workspace.ID(), Status: pgtype.Present},
 	})

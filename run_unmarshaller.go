@@ -16,7 +16,7 @@ type RunDBResult struct {
 	ApplyID                pgtype.Text                   `json:"apply_id"`
 	CreatedAt              time.Time                     `json:"created_at"`
 	IsDestroy              bool                          `json:"is_destroy"`
-	PositionInQueue        int                           `json:"position_in_queue"`
+	PositionInQueue        pgtype.Int4                   `json:"position_in_queue"`
 	Refresh                bool                          `json:"refresh"`
 	RefreshOnly            bool                          `json:"refresh_only"`
 	Status                 pgtype.Text                   `json:"status"`
@@ -24,12 +24,12 @@ type RunDBResult struct {
 	ApplyStatus            pgtype.Text                   `json:"apply_status"`
 	ReplaceAddrs           []string                      `json:"replace_addrs"`
 	TargetAddrs            []string                      `json:"target_addrs"`
-	PlannedAdditions       int                           `json:"planned_additions"`
-	PlannedChanges         int                           `json:"planned_changes"`
-	PlannedDestructions    int                           `json:"planned_destructions"`
-	AppliedAdditions       int                           `json:"applied_additions"`
-	AppliedChanges         int                           `json:"applied_changes"`
-	AppliedDestructions    int                           `json:"applied_destructions"`
+	PlannedAdditions       pgtype.Int4                   `json:"planned_additions"`
+	PlannedChanges         pgtype.Int4                   `json:"planned_changes"`
+	PlannedDestructions    pgtype.Int4                   `json:"planned_destructions"`
+	AppliedAdditions       pgtype.Int4                   `json:"applied_additions"`
+	AppliedChanges         pgtype.Int4                   `json:"applied_changes"`
+	AppliedDestructions    pgtype.Int4                   `json:"applied_destructions"`
 	ConfigurationVersionID pgtype.Text                   `json:"configuration_version_id"`
 	WorkspaceID            pgtype.Text                   `json:"workspace_id"`
 	Speculative            bool                          `json:"speculative"`
@@ -73,7 +73,7 @@ func UnmarshalRunDBResult(result RunDBResult) (*Run, error) {
 		id:               result.RunID.String,
 		createdAt:        result.CreatedAt,
 		isDestroy:        result.IsDestroy,
-		positionInQueue:  result.PositionInQueue,
+		positionInQueue:  int(result.PositionInQueue.Int),
 		refresh:          result.Refresh,
 		refreshOnly:      result.RefreshOnly,
 		status:           RunStatus(result.Status.String),

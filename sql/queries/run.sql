@@ -5,7 +5,6 @@ INSERT INTO runs (
     apply_id,
     created_at,
     is_destroy,
-    position_in_queue,
     refresh,
     refresh_only,
     status,
@@ -13,12 +12,6 @@ INSERT INTO runs (
     apply_status,
     replace_addrs,
     target_addrs,
-    planned_additions,
-    planned_changes,
-    planned_destructions,
-    applied_additions,
-    applied_changes,
-    applied_destructions,
     configuration_version_id,
     workspace_id
 ) VALUES (
@@ -27,7 +20,6 @@ INSERT INTO runs (
     pggen.arg('ApplyID'),
     pggen.arg('CreatedAt'),
     pggen.arg('IsDestroy'),
-    pggen.arg('PositionInQueue'),
     pggen.arg('Refresh'),
     pggen.arg('RefreshOnly'),
     pggen.arg('Status'),
@@ -35,12 +27,6 @@ INSERT INTO runs (
     pggen.arg('ApplyStatus'),
     pggen.arg('ReplaceAddrs'),
     pggen.arg('TargetAddrs'),
-    pggen.arg('PlannedAdditions'),
-    pggen.arg('PlannedChanges'),
-    pggen.arg('PlannedDestructions'),
-    pggen.arg('AppliedAdditions'),
-    pggen.arg('AppliedChanges'),
-    pggen.arg('AppliedDestructions'),
     pggen.arg('ConfigurationVersionID'),
     pggen.arg('WorkspaceID')
 );

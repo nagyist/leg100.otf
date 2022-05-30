@@ -21,7 +21,7 @@ RETURNING *;`
 
 type InsertApplyLogChunkRow struct {
 	ApplyID pgtype.Text `json:"apply_id"`
-	ChunkID int         `json:"chunk_id"`
+	ChunkID pgtype.Int4 `json:"chunk_id"`
 	Chunk   []byte      `json:"chunk"`
 }
 
@@ -63,8 +63,8 @@ GROUP BY apply_id
 ;`
 
 type FindApplyLogChunksParams struct {
-	Offset  int
-	Limit   int
+	Offset  pgtype.Int4
+	Limit   pgtype.Int4
 	ApplyID pgtype.Text
 }
 

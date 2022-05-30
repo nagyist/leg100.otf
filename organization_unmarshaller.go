@@ -11,8 +11,8 @@ func UnmarshalOrganizationDBResult(result pggen.Organizations) (*Organization, e
 		createdAt:       result.CreatedAt,
 		updatedAt:       result.UpdatedAt,
 		name:            result.Name.String,
-		sessionRemember: result.SessionRemember,
-		sessionTimeout:  result.SessionTimeout,
+		sessionRemember: int(result.SessionRemember.Int),
+		sessionTimeout:  int(result.SessionTimeout.Int),
 	}
 
 	return &org, nil

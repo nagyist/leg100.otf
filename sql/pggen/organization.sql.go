@@ -19,8 +19,8 @@ type FindOrganizationByNameRow struct {
 	CreatedAt       time.Time   `json:"created_at"`
 	UpdatedAt       time.Time   `json:"updated_at"`
 	Name            pgtype.Text `json:"name"`
-	SessionRemember int         `json:"session_remember"`
-	SessionTimeout  int         `json:"session_timeout"`
+	SessionRemember pgtype.Int4 `json:"session_remember"`
+	SessionTimeout  pgtype.Int4 `json:"session_timeout"`
 }
 
 // FindOrganizationByName implements Querier.FindOrganizationByName.
@@ -60,8 +60,8 @@ type FindOrganizationByNameForUpdateRow struct {
 	CreatedAt       time.Time   `json:"created_at"`
 	UpdatedAt       time.Time   `json:"updated_at"`
 	Name            pgtype.Text `json:"name"`
-	SessionRemember int         `json:"session_remember"`
-	SessionTimeout  int         `json:"session_timeout"`
+	SessionRemember pgtype.Int4 `json:"session_remember"`
+	SessionTimeout  pgtype.Int4 `json:"session_timeout"`
 }
 
 // FindOrganizationByNameForUpdate implements Querier.FindOrganizationByNameForUpdate.
@@ -99,8 +99,8 @@ type FindOrganizationsRow struct {
 	CreatedAt       time.Time   `json:"created_at"`
 	UpdatedAt       time.Time   `json:"updated_at"`
 	Name            pgtype.Text `json:"name"`
-	SessionRemember int         `json:"session_remember"`
-	SessionTimeout  int         `json:"session_timeout"`
+	SessionRemember pgtype.Int4 `json:"session_remember"`
+	SessionTimeout  pgtype.Int4 `json:"session_timeout"`
 }
 
 // FindOrganizations implements Querier.FindOrganizations.
@@ -201,8 +201,8 @@ type InsertOrganizationParams struct {
 	CreatedAt       time.Time
 	UpdatedAt       time.Time
 	Name            pgtype.Text
-	SessionRemember int
-	SessionTimeout  int
+	SessionRemember pgtype.Int4
+	SessionTimeout  pgtype.Int4
 }
 
 // InsertOrganization implements Querier.InsertOrganization.
@@ -240,8 +240,8 @@ RETURNING organization_id;`
 
 type UpdateOrganizationByNameParams struct {
 	NewName         pgtype.Text
-	SessionRemember int
-	SessionTimeout  int
+	SessionRemember pgtype.Int4
+	SessionTimeout  pgtype.Int4
 	UpdatedAt       time.Time
 	Name            pgtype.Text
 }

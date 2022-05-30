@@ -83,7 +83,7 @@ sql:
 		--query-glob 'sql/queries/*.sql' \
 		--output-dir sql/pggen \
 		--go-type 'text=github.com/jackc/pgtype.Text' \
-		--go-type 'int4=int' \
+		--go-type 'int4=github.com/jackc/pgtype.Int4' \
 		--go-type 'bool=bool' \
 		--go-type 'timestamptz=time.Time' \
 		--go-type 'bytea=[]byte' \

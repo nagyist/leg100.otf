@@ -33,8 +33,8 @@ func (db OrganizationDB) Create(org *otf.Organization) error {
 		CreatedAt:       org.CreatedAt(),
 		UpdatedAt:       org.UpdatedAt(),
 		Name:            pgtype.Text{String: org.Name(), Status: pgtype.Present},
-		SessionRemember: org.SessionRemember(),
-		SessionTimeout:  org.SessionTimeout(),
+		SessionRemember: pgtype.Int4{Int: int32(org.SessionRemember()), Status: pgtype.Null},
+		SessionTimeout:  pgtype.Int4{Int: int32(org.SessionTimeout()), Status: pgtype.Present},
 	})
 	if err != nil {
 		return databaseError(err)
@@ -67,8 +67,8 @@ func (db OrganizationDB) Update(name string, fn func(*otf.Organization) error) (
 	_, err = q.UpdateOrganizationByName(ctx, pggen.UpdateOrganizationByNameParams{
 		Name:            pgtype.Text{String: name, Status: pgtype.Present},
 		NewName:         pgtype.Text{String: org.Name(), Status: pgtype.Present},
-		SessionRemember: org.SessionRemember(),
-		SessionTimeout:  org.SessionTimeout(),
+		SessionRemember: pgtype.Int4{Int: int32(org.SessionRemember()), Status: pgtype.Present},
+		SessionTimeout:  pgtype.Int4{Int: int32(org.SessionTimeout()), Status: pgtype.Present},
 		UpdatedAt:       org.UpdatedAt(),
 	})
 	if err != nil {

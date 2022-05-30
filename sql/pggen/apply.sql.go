@@ -976,8 +976,8 @@ type Organizations struct {
 	CreatedAt       time.Time   `json:"created_at"`
 	UpdatedAt       time.Time   `json:"updated_at"`
 	Name            pgtype.Text `json:"name"`
-	SessionRemember int         `json:"session_remember"`
-	SessionTimeout  int         `json:"session_timeout"`
+	SessionRemember pgtype.Int4 `json:"session_remember"`
+	SessionTimeout  pgtype.Int4 `json:"session_timeout"`
 }
 
 // PlanStatusTimestamps represents the Postgres composite type "plan_status_timestamps".
@@ -1001,19 +1001,19 @@ type Runs struct {
 	ApplyID                pgtype.Text `json:"apply_id"`
 	CreatedAt              time.Time   `json:"created_at"`
 	IsDestroy              bool        `json:"is_destroy"`
-	PositionInQueue        int         `json:"position_in_queue"`
+	PositionInQueue        pgtype.Int4 `json:"position_in_queue"`
 	Refresh                bool        `json:"refresh"`
 	RefreshOnly            bool        `json:"refresh_only"`
 	ReplaceAddrs           []string    `json:"replace_addrs"`
 	TargetAddrs            []string    `json:"target_addrs"`
 	PlanBin                []byte      `json:"plan_bin"`
 	PlanJSON               []byte      `json:"plan_json"`
-	PlannedAdditions       int         `json:"planned_additions"`
-	PlannedChanges         int         `json:"planned_changes"`
-	PlannedDestructions    int         `json:"planned_destructions"`
-	AppliedAdditions       int         `json:"applied_additions"`
-	AppliedChanges         int         `json:"applied_changes"`
-	AppliedDestructions    int         `json:"applied_destructions"`
+	PlannedAdditions       pgtype.Int4 `json:"planned_additions"`
+	PlannedChanges         pgtype.Int4 `json:"planned_changes"`
+	PlannedDestructions    pgtype.Int4 `json:"planned_destructions"`
+	AppliedAdditions       pgtype.Int4 `json:"applied_additions"`
+	AppliedChanges         pgtype.Int4 `json:"applied_changes"`
+	AppliedDestructions    pgtype.Int4 `json:"applied_destructions"`
 	Status                 pgtype.Text `json:"status"`
 	PlanStatus             pgtype.Text `json:"plan_status"`
 	ApplyStatus            pgtype.Text `json:"apply_status"`
