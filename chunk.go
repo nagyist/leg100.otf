@@ -5,10 +5,14 @@ import (
 	"fmt"
 )
 
-// Chunk is a continuous portion of binary data, with start and end indicating
-// if the portion includes the start and/or end of the binary data.
+// Chunk is a continuous portion of binary data.
 type Chunk struct {
-	Data       []byte
+	// Offset within binary data that this chunk represents a portion of.
+	Offset int
+	// The portion of data.
+	Data []byte
+	// Whether chunk includes the start and end of binary data that this chunk
+	// represents a portion of.
 	Start, End bool
 }
 
@@ -50,23 +54,25 @@ func (c Chunk) Marshal() []byte {
 	return c.Data
 }
 
-func UnmarshalChunk(chunk []byte) (out Chunk) {
+func UnmarshalChunk(chunk []byte, offset int) Chunk {
 	if len(chunk) == 0 {
-		return out
+		return Chunk{}
 	}
 
+	dst := Chunk{Offset: offset}
+
 	if chunk[0] == ChunkStartMarker {
-		out.Start = true
+		dst.Start = true
 		chunk = chunk[1:]
 	}
 	if chunk[len(chunk)-1] == ChunkEndMarker {
-		out.End = true
+		dst.End = true
 		chunk = chunk[:len(chunk)-1]
 	}
 
-	out.Data = chunk
+	dst.Data = chunk
 
-	return out
+	return dst
 }
 
 // Cut returns a new smaller chunk. NOTE: the options Offset and limit operate
@@ -98,7 +104,7 @@ func (c Chunk) Cut(opts GetChunkOptions) (Chunk, error) {
 	// Cut data
 	data = data[opts.Offset:(opts.Offset + opts.Limit)]
 
-	return UnmarshalChunk(data), nil
+	return UnmarshalChunk(data, c.Offset+opts.Offset), nil
 }
 
 // Append appends a chunk to an existing chunk
