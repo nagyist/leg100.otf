@@ -19,11 +19,17 @@ type JobWriter struct {
 	started bool
 
 	logr.Logger
+
+	// keep a running record of the offset
+	offset int
 }
 
 // Write uploads a chunk of logs to the server.
 func (w *JobWriter) Write(p []byte) (int, error) {
-	chunk := Chunk{Data: p}
+	chunk := Chunk{
+		Data:   p,
+		Offset: w.offset + len(p),
+	}
 
 	if !w.started {
 		w.started = true
