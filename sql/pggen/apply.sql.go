@@ -569,6 +569,13 @@ type Querier interface {
 	// UpdateWorkspaceByIDScan scans the result of an executed UpdateWorkspaceByIDBatch query.
 	UpdateWorkspaceByIDScan(results pgx.BatchResults) (pgtype.Text, error)
 
+	UpdateWorkspaceCurrentRunByID(ctx context.Context, currentRunID pgtype.Text, id pgtype.Text) (pgtype.Text, error)
+	// UpdateWorkspaceCurrentRunByIDBatch enqueues a UpdateWorkspaceCurrentRunByID query into batch to be executed
+	// later by the batch.
+	UpdateWorkspaceCurrentRunByIDBatch(batch genericBatch, currentRunID pgtype.Text, id pgtype.Text)
+	// UpdateWorkspaceCurrentRunByIDScan scans the result of an executed UpdateWorkspaceCurrentRunByIDBatch query.
+	UpdateWorkspaceCurrentRunByIDScan(results pgx.BatchResults) (pgtype.Text, error)
+
 	UpdateWorkspaceLockByID(ctx context.Context, params UpdateWorkspaceLockByIDParams) (pgconn.CommandTag, error)
 	// UpdateWorkspaceLockByIDBatch enqueues a UpdateWorkspaceLockByID query into batch to be executed
 	// later by the batch.
@@ -902,6 +909,9 @@ func PrepareAllQueries(ctx context.Context, p preparer) error {
 	if _, err := p.Prepare(ctx, updateWorkspaceByIDSQL, updateWorkspaceByIDSQL); err != nil {
 		return fmt.Errorf("prepare query 'UpdateWorkspaceByID': %w", err)
 	}
+	if _, err := p.Prepare(ctx, updateWorkspaceCurrentRunByIDSQL, updateWorkspaceCurrentRunByIDSQL); err != nil {
+		return fmt.Errorf("prepare query 'UpdateWorkspaceCurrentRunByID': %w", err)
+	}
 	if _, err := p.Prepare(ctx, updateWorkspaceLockByIDSQL, updateWorkspaceLockByIDSQL); err != nil {
 		return fmt.Errorf("prepare query 'UpdateWorkspaceLockByID': %w", err)
 	}
@@ -1041,6 +1051,7 @@ type Workspaces struct {
 	OrganizationID             pgtype.Text `json:"organization_id"`
 	LockRunID                  pgtype.Text `json:"lock_run_id"`
 	LockUserID                 pgtype.Text `json:"lock_user_id"`
+	CurrentRunID               pgtype.Text `json:"current_run_id"`
 }
 
 // typeResolver looks up the pgtype.ValueTranscoder by Postgres type name.
@@ -1303,6 +1314,7 @@ func (tr *typeResolver) newWorkspaces() pgtype.ValueTranscoder {
 		compositeField{"organization_id", "text", &pgtype.Text{}},
 		compositeField{"lock_run_id", "text", &pgtype.Text{}},
 		compositeField{"lock_user_id", "text", &pgtype.Text{}},
+		compositeField{"current_run_id", "text", &pgtype.Text{}},
 	)
 }
 
