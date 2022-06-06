@@ -57,7 +57,7 @@ func TestChunkProxy_PutChunk(t *testing.T) {
 			err = proxy.PutChunk(context.Background(), id, tt.chunk)
 			require.NoError(t, err)
 
-			// expect cache to have identical content to store
+			// expect cache to have identical content as store
 			assert.Equal(t, string(backend.store[id].Marshal()), string(cache.cache[otf.LogCacheKey(id)]))
 		})
 	}

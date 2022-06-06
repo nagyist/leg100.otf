@@ -60,6 +60,8 @@ func (s PlanService) PutChunk(ctx context.Context, id string, chunk otf.Chunk) e
 
 	s.V(2).Info("written plan logs", "id", id, "start", chunk.Start, "end", chunk.End)
 
+	s.Publish(otf.Event{Type: otf.EventLogChunk, Payload: chunk})
+
 	return nil
 }
 

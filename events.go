@@ -15,6 +15,7 @@ const (
 	EventPlanQueued            EventType = "plan_queued"
 	EventApplyQueued           EventType = "apply_queued"
 	EventError                 EventType = "error"
+	EventLogChunk              EventType = "log_chunk"
 )
 
 // EventType identifies the type of event
