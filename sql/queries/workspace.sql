@@ -136,6 +136,13 @@ SET
 WHERE workspace_id = pggen.arg('id')
 RETURNING workspace_id;
 
+-- name: UpdateWorkspaceCurrentRunByID :one
+UPDATE workspaces
+SET
+    current_run_id = pggen.arg('current_run_id')
+WHERE workspace_id = pggen.arg('id')
+RETURNING workspace_id;
+
 -- name: UpdateWorkspaceLockByID :exec
 UPDATE workspaces
 SET
