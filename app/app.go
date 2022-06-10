@@ -25,6 +25,7 @@ type Application struct {
 	applyService                otf.ApplyService
 	eventService                otf.EventService
 	userService                 otf.UserService
+	chunkService                otf.ChunkService
 }
 
 func NewApplication(logger logr.Logger, db *sql.DB, cache *bigcache.BigCache) (*Application, error) {
@@ -37,14 +38,12 @@ func NewApplication(logger logr.Logger, db *sql.DB, cache *bigcache.BigCache) (*
 	stateVersionService := NewStateVersionService(db, logger, cache)
 	configurationVersionService := NewConfigurationVersionService(db, logger, cache)
 	runService := NewRunService(db, logger, workspaceService, configurationVersionService, eventService, cache)
-	planService, err := NewPlanService(db, db.PlanLogs(), logger, eventService, cache)
+	chunkService, err := newChunkService(db, logger, cache)
 	if err != nil {
 		return nil, err
 	}
-	applyService, err := NewApplyService(db, db.ApplyLogs(), logger, eventService, cache)
-	if err != nil {
-		return nil, err
-	}
+	planService := NewPlanService(db, chunkService, logger, eventService)
+	applyService := NewApplyService(db, chunkService, logger, eventService)
 	userService := NewUserService(logger, db)
 
 	return &Application{
@@ -57,6 +56,7 @@ func NewApplication(logger logr.Logger, db *sql.DB, cache *bigcache.BigCache) (*
 		applyService:                applyService,
 		eventService:                eventService,
 		userService:                 userService,
+		chunkService:                chunkService,
 	}, nil
 }
 
@@ -94,4 +94,8 @@ func (app *Application) EventService() otf.EventService {
 
 func (app *Application) UserService() otf.UserService {
 	return app.userService
+}
+
+func (app *Application) ChunkService() otf.ChunkService {
+	return app.chunkService
 }

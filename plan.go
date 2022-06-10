@@ -27,7 +27,8 @@ const (
 
 // Plan represents a Terraform Enterprise plan.
 type Plan struct {
-	id string
+	id    string
+	jobID string
 	// Resources is a report of planned resource changes
 	*ResourceReport
 	// Status is the current status
@@ -39,7 +40,7 @@ type Plan struct {
 }
 
 func (p *Plan) ID() string         { return p.id }
-func (p *Plan) JobID() string      { return p.id }
+func (p *Plan) JobID() string      { return p.jobID }
 func (p *Plan) String() string     { return p.id }
 func (p *Plan) Status() PlanStatus { return p.status }
 
@@ -133,7 +134,7 @@ func (p *Plan) ToJSONAPI(req *http.Request) any {
 	dto := &jsonapi.Plan{
 		ID:               p.ID(),
 		HasChanges:       p.HasChanges(),
-		LogReadURL:       httputil.Absolute(req, fmt.Sprintf("plans/%s/logs", p.ID())),
+		LogReadURL:       httputil.Absolute(req, fmt.Sprintf("jobs/%s/logs", p.JobID())),
 		Status:           string(p.Status()),
 		StatusTimestamps: &jsonapi.PlanStatusTimestamps{},
 	}
@@ -200,8 +201,9 @@ type PlanStatusTimestamp struct {
 
 func newPlan(run *Run) *Plan {
 	return &Plan{
-		id:  NewID("plan"),
-		run: run,
+		id:    NewID("plan"),
+		jobID: NewID("job"),
+		run:   run,
 		// new plans always start off in pending state
 		status:         PlanPending,
 		ResourceReport: &ResourceReport{},

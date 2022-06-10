@@ -26,8 +26,8 @@ type JobService interface {
 	Claim(ctx context.Context, id string, opts JobClaimOptions) (Job, error)
 	// Finish is called by an agent when it finishes a job.
 	Finish(ctx context.Context, id string, opts JobFinishOptions) (Job, error)
-	// PutChunk uploads a chunk of logs from the job.
-	PutChunk(ctx context.Context, id string, chunk Chunk) error
+	// Retrieve and upload chunks of logs for jobs
+	ChunkService
 }
 
 type JobClaimOptions struct {

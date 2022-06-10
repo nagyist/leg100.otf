@@ -24,7 +24,8 @@ const (
 
 // Apply represents a terraform apply
 type Apply struct {
-	id string
+	id    string
+	jobID string
 	// ResourcesReport is a report of applied resource changes
 	*ResourceReport
 	// Status is the current status
@@ -36,7 +37,7 @@ type Apply struct {
 }
 
 func (a *Apply) ID() string          { return a.id }
-func (a *Apply) JobID() string       { return a.id }
+func (a *Apply) JobID() string       { return a.jobID }
 func (a *Apply) String() string      { return a.id }
 func (a *Apply) Status() ApplyStatus { return a.status }
 
@@ -116,7 +117,7 @@ func (a *Apply) runTerraformApply(env Environment) error {
 func (a *Apply) ToJSONAPI(req *http.Request) any {
 	dto := &jsonapi.Apply{
 		ID:               a.ID(),
-		LogReadURL:       httputil.Absolute(req, fmt.Sprintf("applies/%s/logs", a.ID())),
+		LogReadURL:       httputil.Absolute(req, fmt.Sprintf("jobs/%s/logs", a.JobID())),
 		Status:           string(a.Status()),
 		StatusTimestamps: &jsonapi.ApplyStatusTimestamps{},
 	}
@@ -165,6 +166,7 @@ type ApplyStatusTimestamp struct {
 func newApply(run *Run) *Apply {
 	return &Apply{
 		id:             NewID("apply"),
+		jobID:          NewID("job"),
 		run:            run,
 		status:         ApplyPending,
 		ResourceReport: &ResourceReport{},
