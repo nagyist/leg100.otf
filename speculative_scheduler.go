@@ -39,27 +39,12 @@ func (s *SpeculativeScheduler) Start(ctx context.Context) {
 }
 
 func (s *SpeculativeScheduler) handleRun(ctx context.Context, run *Run) error {
-	if !run.Speculative() {
-		return nil
-	}
-	switch run.Status() {
-	case RunPending:
-		// immediately enqueue plan for speculative runs
+	if run.Speculative() && run.Status() == RunPending {
+		// immediately enqueue plan for pending speculative runs
 		_, err := s.RunService.Start(ctx, run.ID())
 		if err != nil {
 			return err
 		}
-		// publish event
-	case RunPlanned:
-		// finish run after plan phase
-		_, err := s.RunService.UpdateStatus(ctx, RunGetOptions{ID: String(run.ID())}, func(run *Run) error {
-			run.updateStatus(RunPlannedAndFinished)
-			return nil
-		})
-		if err != nil {
-			return err
-		}
-		// publish event
 	}
 	return nil
 }

@@ -48,10 +48,6 @@ func (s RunService) Create(ctx context.Context, spec otf.WorkspaceSpec, opts otf
 	s.V(1).Info("created run", "id", run.ID())
 
 	s.es.Publish(otf.Event{Type: otf.EventRunCreated, Payload: run})
-	// TODO: remove once event types are simplified, i.e. EventRunStateChange
-	if run.Speculative() {
-		s.es.Publish(otf.Event{Type: otf.EventPlanQueued, Payload: run})
-	}
 
 	return run, nil
 }
