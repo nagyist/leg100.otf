@@ -498,6 +498,8 @@ type RunService interface {
 	Get(ctx context.Context, id string) (*Run, error)
 	// List lists runs according to the given options.
 	List(ctx context.Context, opts RunListOptions) (*RunList, error)
+	// List and watch runs
+	ListWatch(ctx context.Context, opts RunListOptions) (<-chan *Run, error)
 	// Delete deletes a run with the given ID.
 	Delete(ctx context.Context, id string) error
 	// Apply a run with the given ID.
@@ -512,6 +514,8 @@ type RunService interface {
 	GetPlanFile(ctx context.Context, spec RunGetOptions, format PlanFormat) ([]byte, error)
 	// UploadPlanFile saves a run's plan file with the requested format.
 	UploadPlanFile(ctx context.Context, planID string, plan []byte, format PlanFormat) error
+	// UpdateStatus updates the run status
+	UpdateStatus(ctx context.Context, opts RunGetOptions, fn func(*Run) error) (*Run, error)
 }
 
 // RunCreateOptions represents the options for creating a new run. See

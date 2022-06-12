@@ -3,7 +3,6 @@ package otf
 import (
 	"context"
 	"errors"
-	"fmt"
 )
 
 var (
@@ -36,22 +35,4 @@ type JobClaimOptions struct {
 
 type JobFinishOptions struct {
 	Errored bool
-}
-
-// JobSelector selects the appropriate job and job service for a Run
-type JobSelector struct {
-	PlanService  PlanService
-	ApplyService ApplyService
-}
-
-// GetJob returns the appropriate job and job service for the Run
-func (jsp *JobSelector) GetJob(run *Run) (Job, JobService, error) {
-	switch run.Status() {
-	case RunPlanQueued, RunPlanning:
-		return run.Plan, jsp.PlanService, nil
-	case RunApplyQueued, RunApplying:
-		return run.Apply, jsp.ApplyService, nil
-	default:
-		return nil, nil, fmt.Errorf("attempted to retrieve active job for run but run as an invalid status: %s", run.Status())
-	}
 }
