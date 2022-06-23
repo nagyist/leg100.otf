@@ -39,7 +39,7 @@ func (w *Worker) handle(ctx context.Context, job Job) {
 	}
 
 	// Claim the job before proceeding in case another agent has claimed it.
-	job, err = w.App.JobService().Claim(ctx, job.JobID(), otf.JobClaimOptions{AgentID: DefaultID})
+	job, err = w.App.JobService().Claim(ctx, job.JobID(), otf.PhaseStartOptions{AgentID: DefaultID})
 	if err != nil {
 		log.Error(err, "unable to start job")
 		return
@@ -52,7 +52,7 @@ func (w *Worker) handle(ctx context.Context, job Job) {
 
 	log.Info("executing job")
 
-	var finishOptions otf.JobFinishOptions
+	var finishOptions otf.PhaseFinishOptions
 
 	if err := env.Execute(job); err != nil {
 		log.Error(err, "executing job")

@@ -97,7 +97,7 @@ func NewServer(logger logr.Logger, cfg ServerConfig, app otf.Application, db otf
 
 	router.HandleFunc("/state-versions/{id}/download", s.DownloadStateVersion).Methods("GET")
 	router.HandleFunc("/configuration-versions/{id}/upload", s.UploadConfigurationVersion).Methods("PUT")
-	router.HandleFunc("/jobs/{job_id}/logs", s.GetLogs).Methods("GET")
+	router.HandleFunc("/plans/{job_id}/logs", s.GetLogs).Methods("GET")
 	router.HandleFunc("/jobs/{job_id}/logs", s.UploadLogs).Methods("PUT")
 	router.HandleFunc("/runs/{id}/plan", s.GetPlanFile).Methods("GET")
 

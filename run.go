@@ -87,7 +87,7 @@ type Run struct {
 	apply     *Apply
 	workspace *Workspace
 	// Job is the current job the run is performing
-	Job
+	Phase
 }
 
 func (r *Run) ID() string                             { return r.id }
@@ -259,16 +259,16 @@ func (r *Run) Start() error {
 	case RunApplyQueued:
 		r.updateStatus(RunApplying)
 	case RunPlanning, RunApplying:
-		return ErrJobAlreadyClaimed
+		return ErrPhaseAlreadyStarted
 	default:
 		return fmt.Errorf("run cannot be started: invalid status: %s", r.Status())
 	}
 	return nil
 }
 
-// Finish updates the run to reflect its plan having finished. An event is
-// returned reflecting the run's new status.
-func (r *Run) Finish(opts JobFinishOptions) (*Event, error) {
+// Finish updates the run to reflect its plan or apply having finished. An event
+// is returned reflecting the run's new status.
+func (r *Run) Finish(opts PhaseFinishOptions) (*Event, error) {
 	if opts.Errored {
 		if err := r.updateStatus(RunErrored); err != nil {
 			return nil, err
@@ -373,36 +373,36 @@ func (r *Run) ToJSONAPI(req *http.Request) any {
 func (r *Run) updateStatus(status RunStatus) error {
 	switch status {
 	case RunPending:
-		r.plan.updateStatus(JobPending)
-		r.apply.updateStatus(JobPending)
+		r.plan.updateStatus(PhasePending)
+		r.apply.updateStatus(PhasePending)
 	case RunPlanQueued:
-		r.plan.updateStatus(JobQueued)
+		r.plan.updateStatus(PhaseQueued)
 	case RunPlanning:
-		r.plan.updateStatus(JobRunning)
+		r.plan.updateStatus(PhaseRunning)
 	case RunPlanned, RunPlannedAndFinished:
-		r.plan.updateStatus(JobFinished)
-		r.apply.updateStatus(JobUnreachable)
+		r.plan.updateStatus(PhaseFinished)
+		r.apply.updateStatus(PhaseUnreachable)
 	case RunApplyQueued:
-		r.apply.updateStatus(JobQueued)
+		r.apply.updateStatus(PhaseQueued)
 	case RunApplying:
-		r.apply.updateStatus(JobRunning)
+		r.apply.updateStatus(PhaseRunning)
 	case RunApplied:
-		r.apply.updateStatus(JobFinished)
+		r.apply.updateStatus(PhaseFinished)
 	case RunErrored:
 		switch r.Status() {
 		case RunPlanning:
-			r.plan.updateStatus(JobErrored)
-			r.apply.updateStatus(JobUnreachable)
+			r.plan.updateStatus(PhaseErrored)
+			r.apply.updateStatus(PhaseUnreachable)
 		case RunApplying:
-			r.apply.updateStatus(JobErrored)
+			r.apply.updateStatus(PhaseErrored)
 		}
 	case RunCanceled:
 		switch r.Status() {
 		case RunPlanQueued, RunPlanning:
-			r.plan.updateStatus(JobCanceled)
-			r.apply.updateStatus(JobUnreachable)
+			r.plan.updateStatus(PhaseCanceled)
+			r.apply.updateStatus(PhaseUnreachable)
 		case RunApplyQueued, RunApplying:
-			r.apply.updateStatus(JobCanceled)
+			r.apply.updateStatus(PhaseCanceled)
 		}
 	}
 	r.status = status
@@ -410,8 +410,8 @@ func (r *Run) updateStatus(status RunStatus) error {
 		Status:    status,
 		Timestamp: CurrentTimestamp(),
 	})
-	// set job reflecting new status
-	r.setJob()
+	// set phase reflecting new status
+	r.setPhase()
 	return nil
 }
 
@@ -524,14 +524,14 @@ func (r *Run) uploadState(ctx context.Context, env Environment) error {
 }
 
 // Set appropriate job for run
-func (r *Run) setJob() {
+func (r *Run) setPhase() {
 	switch r.Status() {
 	case RunPlanQueued, RunPlanning:
-		r.Job = r.plan
+		r.Phase = r.plan
 	case RunApplyQueued, RunApplying:
-		r.Job = r.apply
+		r.Phase = r.apply
 	default:
-		r.Job = &noOp{}
+		r.Phase = &pendingPhase{}
 	}
 }
 

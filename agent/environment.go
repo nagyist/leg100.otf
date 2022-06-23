@@ -22,7 +22,7 @@ var _ otf.Environment = (*Environment)(nil)
 // Environment provides an execution environment for a running a run job,
 // providing a working directory, capturing logs etc.
 type Environment struct {
-	otf.JobService
+	otf.PhaseService
 
 	runService                  otf.RunService
 	configurationVersionService otf.ConfigurationVersionService
@@ -60,9 +60,9 @@ func NewEnvironment(
 	}
 
 	out := &otf.JobWriter{
-		ID:         job.JobID(),
-		Logger:     logger,
-		JobService: app.JobService(),
+		ID:           job.JobID(),
+		Logger:       logger,
+		PhaseService: app.JobService(),
 	}
 
 	return &Environment{

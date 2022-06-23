@@ -12,7 +12,7 @@ type JobWriter struct {
 	ID string
 
 	// JobService for uploading logs to server
-	JobService
+	PhaseService
 
 	// started is used internally by the writer to determine whether the first
 	// write has been prefixed with the start marker (STX).

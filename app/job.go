@@ -54,7 +54,7 @@ func (s jobService) PutChunk(ctx context.Context, jobID string, chunk otf.Chunk)
 }
 
 // Claim a job.
-func (s jobService) Claim(ctx context.Context, jobID string, opts otf.JobClaimOptions) (otf.Job, error) {
+func (s jobService) Claim(ctx context.Context, jobID string, opts otf.PhaseStartOptions) (otf.Phase, error) {
 	run, err := s.db.UpdateStatus(ctx, otf.RunGetOptions{JobID: &jobID}, func(run *otf.Run) error {
 		return run.Start()
 	})
@@ -67,7 +67,7 @@ func (s jobService) Claim(ctx context.Context, jobID string, opts otf.JobClaimOp
 }
 
 // Finish a job.
-func (s jobService) Finish(ctx context.Context, jobID string, opts otf.JobFinishOptions) (otf.Job, error) {
+func (s jobService) Finish(ctx context.Context, jobID string, opts otf.PhaseFinishOptions) (otf.Phase, error) {
 	var event *otf.Event
 	run, err := s.db.UpdateStatus(ctx, otf.RunGetOptions{JobID: &jobID}, func(run *otf.Run) (err error) {
 		event, err = run.Finish(opts)

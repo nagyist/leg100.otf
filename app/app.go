@@ -25,7 +25,7 @@ type Application struct {
 	applyService                otf.ApplyService
 	eventService                otf.EventService
 	userService                 otf.UserService
-	jobService                  otf.JobService
+	jobService                  otf.PhaseService
 }
 
 func NewApplication(logger logr.Logger, db *sql.DB, cache *bigcache.BigCache) (*Application, error) {
@@ -45,8 +45,14 @@ func NewApplication(logger logr.Logger, db *sql.DB, cache *bigcache.BigCache) (*
 		return nil, err
 	}
 	runService := NewRunService(db, logger, workspaceService, configurationVersionService, eventService, jobService, cache)
-	planService := NewPlanService(db, logger)
-	applyService := NewApplyService(db, logger)
+	planService, err := NewPlanService(db, logger, eventService, cache)
+	if err != nil {
+		return nil, err
+	}
+	applyService, err := NewApplyService(db, logger, eventService, cache)
+	if err != nil {
+		return nil, err
+	}
 	userService := NewUserService(logger, db)
 
 	return &Application{
@@ -99,6 +105,6 @@ func (app *Application) UserService() otf.UserService {
 	return app.userService
 }
 
-func (app *Application) JobService() otf.JobService {
+func (app *Application) JobService() otf.PhaseService {
 	return app.jobService
 }
