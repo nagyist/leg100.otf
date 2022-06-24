@@ -98,8 +98,3 @@ func newPhase() *phaseMixin {
 type pendingPhase struct {
 	Phase
 }
-
-// finalPhase is the final phase of a run.
-type finalPhase struct {
-	Phase
-}

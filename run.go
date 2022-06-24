@@ -566,9 +566,6 @@ type RunService interface {
 	UploadPlanFile(ctx context.Context, planID string, plan []byte, format PlanFormat) error
 	// UpdateStatus updates the run status
 	UpdateStatus(ctx context.Context, opts RunGetOptions, fn func(*Run) error) (*Run, error)
-	// CreateApplyReport parses the logs from a successful terraform apply and
-	// persists a resource report to the database.
-	CreateApplyReport(ctx context.Context, runID string) error
 }
 
 // RunCreateOptions represents the options for creating a new run. See
@@ -656,8 +653,6 @@ type RunGetOptions struct {
 	ApplyID *string
 	// Get run via plan ID
 	PlanID *string
-	// Get run via job ID
-	JobID *string
 	// A list of relations to include. See available resources:
 	// https://www.terraform.io/docs/cloud/api/run.html#available-related-resources
 	Include *string `schema:"include"`
@@ -670,8 +665,6 @@ func (o *RunGetOptions) String() string {
 		return *o.PlanID
 	} else if o.ApplyID != nil {
 		return *o.ApplyID
-	} else if o.JobID != nil {
-		return *o.JobID
 	} else {
 		panic("no ID specified")
 	}

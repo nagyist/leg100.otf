@@ -66,7 +66,7 @@ func (s PlanService) PutChunk(ctx context.Context, planID string, chunk otf.Chun
 
 // Start plan phase.
 func (s PlanService) Start(ctx context.Context, planID string, opts otf.PhaseStartOptions) (*otf.Run, error) {
-	run, err := s.db.UpdateStatus(ctx, otf.RunGetOptions{JobID: &planID}, func(run *otf.Run) error {
+	run, err := s.db.UpdateStatus(ctx, otf.RunGetOptions{PlanID: &planID}, func(run *otf.Run) error {
 		return run.Start()
 	})
 	if err != nil {
@@ -80,7 +80,7 @@ func (s PlanService) Start(ctx context.Context, planID string, opts otf.PhaseSta
 // Finish plan phase.
 func (s PlanService) Finish(ctx context.Context, planID string, opts otf.PhaseFinishOptions) (*otf.Run, error) {
 	var event *otf.Event
-	run, err := s.db.UpdateStatus(ctx, otf.RunGetOptions{JobID: &planID}, func(run *otf.Run) (err error) {
+	run, err := s.db.UpdateStatus(ctx, otf.RunGetOptions{PlanID: &planID}, func(run *otf.Run) (err error) {
 		event, err = run.Finish(opts)
 		return err
 	})

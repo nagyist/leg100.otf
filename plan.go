@@ -28,6 +28,9 @@ type Plan struct {
 func (p *Plan) ID() string      { return p.id }
 func (p *Plan) PhaseID() string { return p.id }
 func (p *Plan) String() string  { return p.id }
+func (p *Plan) Service(app Application) (PhaseService, error) {
+	return app.PlanService(), nil
+}
 
 // HasChanges determines whether plan has any changes (adds/changes/deletions).
 func (p *Plan) HasChanges() bool {
@@ -117,7 +120,7 @@ func (p *Plan) runTerraformPlan(env Environment) error {
 
 type PlanService interface {
 	Get(ctx context.Context, id string) (*Plan, error)
-	ChunkStore
+	PhaseService
 }
 
 func newPlan(run *Run) *Plan {

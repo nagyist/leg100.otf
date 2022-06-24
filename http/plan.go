@@ -5,7 +5,6 @@ import (
 
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf"
-	"github.com/leg100/otf/http/decode"
 )
 
 // PlanFileOptions represents the options for retrieving the plan file for a
@@ -40,19 +39,9 @@ func (s *Server) GetPlanJSON(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) GetPlanLogs(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	var opts otf.GetChunkOptions
-	if err := decode.Query(&opts, r.URL.Query()); err != nil {
-		writeError(w, http.StatusUnprocessableEntity, err)
-		return
-	}
-	chunk, err := s.PlanService().Get(r.Context(), vars["job_id"], opts)
-	if err != nil {
-		writeError(w, http.StatusNotFound, err)
-		return
-	}
-	if _, err := w.Write(chunk.Marshal()); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
+	getLogs(w, r, s.PlanService(), mux.Vars(r)["plan_id"])
+}
+
+func (s *Server) UploadPlanLogs(w http.ResponseWriter, r *http.Request) {
+	uploadLogs(w, r, s.PlanService(), mux.Vars(r)["plan_id"])
 }

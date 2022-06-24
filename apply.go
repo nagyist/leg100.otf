@@ -24,6 +24,10 @@ func (a *Apply) ID() string      { return a.id }
 func (a *Apply) PhaseID() string { return a.id }
 func (a *Apply) String() string  { return a.id }
 
+func (a *Apply) Service(app Application) (PhaseService, error) {
+	return app.ApplyService(), nil
+}
+
 // Do performs a terraform apply
 func (a *Apply) Do(env Environment) error {
 	if err := a.run.setupEnv(env); err != nil {
@@ -86,7 +90,10 @@ func (a *Apply) ToJSONAPI(req *http.Request) any {
 // ApplyService allows interaction with Applies
 type ApplyService interface {
 	Get(ctx context.Context, id string) (*Apply, error)
-	ChunkStore
+	PhaseService
+	// CreateApplyReport parses the logs from a successful terraform apply and
+	// persists a resource report to the database.
+	CreateApplyReport(ctx context.Context, applyID string) error
 }
 
 func newApply(run *Run) *Apply {
