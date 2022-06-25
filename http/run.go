@@ -148,25 +148,25 @@ func (s *Server) ForceCancelRun(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) GetPlanFile(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	id := vars["id"]
 	var opts PlanFileOptions
 	if err := decode.Query(&opts, r.URL.Query()); err != nil {
 		writeError(w, http.StatusUnprocessableEntity, err)
 		return
 	}
-	s.getPlanFile(w, r, otf.RunGetOptions{ID: &id}, opts)
+	s.getPlanFile(w, r, mux.Vars(r)["run_id"], opts)
 }
 
 func (s *Server) GetJSONPlanByRunID(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	id := vars["id"]
-	opts := PlanFileOptions{Format: otf.PlanFormatJSON}
-	s.getPlanFile(w, r, otf.RunGetOptions{ID: &id}, opts)
+	s.getPlanFile(w, r, mux.Vars(r)["run_id"], PlanFileOptions{Format: otf.PlanFormatJSON})
 }
 
-func (s *Server) getPlanFile(w http.ResponseWriter, r *http.Request, spec otf.RunGetOptions, opts PlanFileOptions) {
-	json, err := s.RunService().GetPlanFile(r.Context(), spec, opts.Format)
+func (s *Server) getPlanFile(w http.ResponseWriter, r *http.Request, runID string, opts PlanFileOptions) {
+	run, err := s.RunService().Get(r.Context(), runID)
+	if err != nil {
+		writeError(w, http.StatusNotFound, err)
+		return
+	}
+	json, err := s.RunService().GetPlanFile(r.Context(), run.Plan().ID(), opts.Format)
 	if err != nil {
 		writeError(w, http.StatusNotFound, err)
 		return

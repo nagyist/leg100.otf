@@ -15,11 +15,12 @@ var _ otf.PlanService = (*PlanService)(nil)
 type PlanService struct {
 	proxy otf.ChunkStore
 	db    *sql.DB
+	rs    otf.RunService
 	otf.EventService
 	logr.Logger
 }
 
-func NewPlanService(db *sql.DB, logger logr.Logger, es otf.EventService, cache otf.Cache) (*PlanService, error) {
+func NewPlanService(db *sql.DB, logger logr.Logger, es otf.EventService, rs otf.RunService, cache otf.Cache) (*PlanService, error) {
 	proxy, err := inmem.NewChunkProxy(cache, db.PlanLogStore())
 	if err != nil {
 		return nil, fmt.Errorf("constructing chunk proxy: %w", err)
@@ -28,6 +29,7 @@ func NewPlanService(db *sql.DB, logger logr.Logger, es otf.EventService, cache o
 		proxy:        proxy,
 		db:           db,
 		EventService: es,
+		rs:           rs,
 		Logger:       logger,
 	}, nil
 }
@@ -79,6 +81,12 @@ func (s PlanService) Start(ctx context.Context, planID string, opts otf.PhaseSta
 
 // Finish plan phase.
 func (s PlanService) Finish(ctx context.Context, planID string, opts otf.PhaseFinishOptions) (*otf.Run, error) {
+	if !opts.Errored {
+		if err := s.CreateReport(ctx, planID); err != nil {
+			// flag the plan phase as a failure
+			opts.Errored = true
+		}
+	}
 	run, err := s.db.UpdateStatus(ctx, otf.RunGetOptions{PlanID: &planID}, func(run *otf.Run) error {
 		return run.Finish(opts)
 	})
@@ -88,5 +96,27 @@ func (s PlanService) Finish(ctx context.Context, planID string, opts otf.PhaseFi
 	}
 	s.V(0).Info("finished plan phase", "id", planID)
 	s.Publish(otf.Event{Type: otf.EventRunStatusUpdate, Payload: run})
+
 	return run, nil
+}
+
+func (s PlanService) CreateReport(ctx context.Context, planID string) error {
+	plan, err := s.rs.GetPlanFile(ctx, planID, otf.PlanFormatJSON)
+	if err != nil {
+		return err
+	}
+	report, err := otf.CompilePlanReport(plan)
+	if err != nil {
+		s.Error(err, "compiling planned changes report", "id", planID)
+		return err
+	}
+	if err := s.db.CreatePlanReport(ctx, planID, report); err != nil {
+		s.Error(err, "saving planned changes report", "id", planID)
+		return err
+	}
+	s.V(1).Info("created planned changes report", "id", planID,
+		"adds", report.Additions,
+		"changes", report.Changes,
+		"destructions", report.Destructions)
+	return nil
 }

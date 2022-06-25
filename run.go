@@ -494,7 +494,7 @@ func (r *Run) uploadJSONPlan(ctx context.Context, env Environment) error {
 }
 
 func (r *Run) downloadPlanFile(ctx context.Context, env Environment) error {
-	plan, err := env.RunService().GetPlanFile(ctx, RunGetOptions{ID: String(r.ID())}, PlanFormatBinary)
+	plan, err := env.RunService().GetPlanFile(ctx, r.plan.id, PlanFormatBinary)
 	if err != nil {
 		return err
 	}
@@ -563,7 +563,7 @@ type RunService interface {
 	// Start a run.
 	Start(ctx context.Context, id string) (*Run, error)
 	// GetPlanFile retrieves a run's plan file with the requested format.
-	GetPlanFile(ctx context.Context, spec RunGetOptions, format PlanFormat) ([]byte, error)
+	GetPlanFile(ctx context.Context, planID string, format PlanFormat) ([]byte, error)
 	// UploadPlanFile saves a run's plan file with the requested format.
 	UploadPlanFile(ctx context.Context, planID string, plan []byte, format PlanFormat) error
 	// UpdateStatus updates the run status

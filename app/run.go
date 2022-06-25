@@ -192,21 +192,7 @@ func (s RunService) Start(ctx context.Context, runID string) (*otf.Run, error) {
 }
 
 // GetPlanFile returns the plan file for the run.
-func (s RunService) GetPlanFile(ctx context.Context, spec otf.RunGetOptions, format otf.PlanFormat) ([]byte, error) {
-	var planID string
-	// We need the plan ID so if caller has specified run or apply ID instead
-	// then we need to get plan ID first
-	if spec.ID != nil || spec.ApplyID != nil {
-		run, err := s.db.GetRun(ctx, spec)
-		if err != nil {
-			s.Error(err, "retrieving plan file", "id", spec.String())
-			return nil, err
-		}
-		planID = run.Plan().ID()
-	} else {
-		planID = *spec.PlanID
-	}
-	// Now use run ID to look up cache
+func (s RunService) GetPlanFile(ctx context.Context, planID string, format otf.PlanFormat) ([]byte, error) {
 	if plan, err := s.cache.Get(format.CacheKey(planID)); err == nil {
 		return plan, nil
 	}
@@ -232,29 +218,11 @@ func (s RunService) UploadPlanFile(ctx context.Context, planID string, plan []by
 		s.Error(err, "uploading plan file", "plan_id", planID, "format", format)
 		return err
 	}
-
 	s.V(0).Info("uploaded plan file", "plan_id", planID, "format", format)
-
-	if format == otf.PlanFormatJSON {
-		report, err := otf.CompilePlanReport(plan)
-		if err != nil {
-			s.Error(err, "compiling planned changes report", "id", planID)
-			return err
-		}
-		if err := s.db.CreatePlanReport(ctx, planID, report); err != nil {
-			s.Error(err, "saving planned changes report", "id", planID)
-			return err
-		}
-		s.V(1).Info("created planned changes report", "id", planID,
-			"adds", report.Additions,
-			"changes", report.Changes,
-			"destructions", report.Destructions)
-	}
 
 	if err := s.cache.Set(format.CacheKey(planID), plan); err != nil {
 		return fmt.Errorf("caching plan: %w", err)
 	}
-
 	return nil
 }
 
