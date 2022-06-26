@@ -36,7 +36,7 @@ func unmarshalConfigurationVersionStatusTimestampDBTypes(typs []pggen.Configurat
 	for _, ty := range typs {
 		timestamps = append(timestamps, ConfigurationVersionStatusTimestamp{
 			Status:    ConfigurationStatus(ty.Status.String),
-			Timestamp: ty.Timestamp.Local(),
+			Timestamp: ty.Timestamp.Time,
 		})
 	}
 	return timestamps

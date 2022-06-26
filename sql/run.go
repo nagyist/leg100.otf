@@ -15,8 +15,7 @@ func (db *DB) CreateRun(ctx context.Context, run *otf.Run) error {
 	return db.Tx(ctx, func(tx otf.DB) error {
 		_, err := db.InsertRun(ctx, pggen.InsertRunParams{
 			ID:                     String(run.ID()),
-			CreatedAt:              run.CreatedAt(),
-			ForceCancelAvailableAt: run.ForceCancelAvailableAt(),
+			CreatedAt:              Timestamptz(run.CreatedAt()),
 			IsDestroy:              run.IsDestroy(),
 			Refresh:                run.Refresh(),
 			RefreshOnly:            run.RefreshOnly(),
