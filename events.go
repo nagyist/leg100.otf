@@ -5,6 +5,8 @@ const (
 	EventOrganizationDeleted EventType = "organization_deleted"
 	EventWorkspaceCreated    EventType = "workspace_created"
 	EventWorkspaceDeleted    EventType = "workspace_deleted"
+	EventWorkspaceLocked     EventType = "workspace_locked"
+	EventWorkspaceUnlocked   EventType = "workspace_unlocked"
 	EventRunCreated          EventType = "run_created"
 	EventRunStatusUpdate     EventType = "run_status_update"
 	EventRunDeleted          EventType = "run_deleted"

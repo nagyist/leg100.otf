@@ -181,8 +181,9 @@ func (s WorkspaceService) Lock(ctx context.Context, spec otf.WorkspaceSpec, opts
 		s.Error(err, "locking workspace", append(spec.LogFields(), "requestor", opts.Requestor.String())...)
 		return nil, err
 	}
-
 	s.V(1).Info("locked workspace", append(spec.LogFields(), "requestor", opts.Requestor.String())...)
+
+	s.es.Publish(otf.Event{Type: otf.EventWorkspaceLocked, Payload: ws})
 
 	return ws, nil
 }
@@ -193,8 +194,9 @@ func (s WorkspaceService) Unlock(ctx context.Context, spec otf.WorkspaceSpec, op
 		s.Error(err, "unlocking workspace", append(spec.LogFields(), "requestor", opts.Requestor.String())...)
 		return nil, err
 	}
-
 	s.V(1).Info("unlocked workspace", append(spec.LogFields(), "requestor", opts.Requestor.String())...)
+
+	s.es.Publish(otf.Event{Type: otf.EventWorkspaceUnlocked, Payload: ws})
 
 	return ws, nil
 }
