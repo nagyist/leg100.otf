@@ -36,7 +36,7 @@ func (db *DB) CreateConfigurationVersion(ctx context.Context, cv *otf.Configurat
 	if err != nil {
 		return err
 	}
-	cv.AddStatusTimestamp(otf.ConfigurationStatus(ts.Status.String), ts.Timestamp)
+	cv.AddStatusTimestamp(otf.ConfigurationStatus(ts.Status.String), ts.Timestamp.Time)
 
 	return tx.Commit(ctx)
 }
