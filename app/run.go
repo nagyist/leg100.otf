@@ -200,9 +200,14 @@ func (s RunService) ForceCancel(ctx context.Context, runID string, opts otf.RunF
 }
 
 // EnqueuePlan enqueues a plan for the run.
-func (s RunService) EnqueuePlan(ctx context.Context, runID string) (*otf.Run, error) {
-	run, err := s.db.UpdateStatus(ctx, runID, func(run *otf.Run) error {
-		return run.EnqueuePlan()
+func (s RunService) EnqueuePlan(ctx context.Context, runID string) (run *otf.Run, err error) {
+	// We use a tx to bind both operations: (a) update the run state and (b)
+	// lock the workspace; both ops must succeed together
+	err = s.db.Tx(ctx, func(db otf.DB) error {
+		run, err = db.UpdateStatus(ctx, runID, func(run *otf.Run) error {
+			return run.EnqueuePlan(ctx, db)
+		})
+		return err
 	})
 	if err != nil {
 		s.Error(err, "enqueuing plan", "id", runID)

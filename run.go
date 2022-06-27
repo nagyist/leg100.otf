@@ -216,9 +216,19 @@ func (r *Run) Done() bool {
 	}
 }
 
-func (r *Run) EnqueuePlan() error {
+func (r *Run) EnqueuePlan(ctx context.Context, locker WorkspaceLocker) error {
 	if r.status != RunPending {
-		return fmt.Errorf("cannot enqueue pending run")
+		return fmt.Errorf("cannot enqueue non-pending run")
+	}
+	// non-speculative runs must lock workspace before their plan can be
+	// enqueued
+	if !r.speculative {
+		_, err := locker.LockWorkspace(ctx, WorkspaceSpec{ID: &r.workspaceID}, WorkspaceLockOptions{
+			Requestor: r,
+		})
+		if err != nil {
+			return err
+		}
 	}
 	r.updateStatus(RunPlanQueued)
 	r.plan.updateStatus(PhaseQueued)
