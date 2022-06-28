@@ -116,13 +116,6 @@ func (s *Scheduler) checkQueue(ctx context.Context, workspaceID string) error {
 	if queue[0].Status() != RunPending {
 		return nil
 	}
-	// run is pending; lock workspace and enqueue its plan
-	_, err = s.WorkspaceService.Lock(ctx, WorkspaceSpec{ID: &workspaceID}, WorkspaceLockOptions{
-		Requestor: queue[0],
-	})
-	if err != nil {
-		return err
-	}
 	_, err = s.RunService.EnqueuePlan(ctx, queue[0].ID())
 	if err != nil {
 		return err
