@@ -86,7 +86,6 @@ func (s RunService) List(ctx context.Context, opts otf.RunListOptions) (*otf.Run
 // ListWatch lists runs and then watches for changes to runs. Note: The options
 // filter the list but not the watch.
 func (s RunService) ListWatch(ctx context.Context, opts otf.RunListOptions) (<-chan *otf.Run, error) {
-	// retrieve incomplete runs from db
 	existing, err := s.db.ListRuns(ctx, opts)
 	if err != nil {
 		return nil, err
@@ -250,9 +249,6 @@ func (s RunService) UploadPlanFile(ctx context.Context, runID string, plan []byt
 
 	s.V(1).Info("uploaded plan file", "id", runID, "format", format)
 
-	if format == otf.PlanFormatJSON {
-	}
-
 	if err := s.cache.Set(format.CacheKey(runID), plan); err != nil {
 		return fmt.Errorf("caching plan: %w", err)
 	}
@@ -324,7 +320,7 @@ func (s RunService) CreateReport(ctx context.Context, runID string, phase otf.Ph
 	case otf.PlanPhase:
 		return s.createPlanReport(ctx, runID)
 	case otf.ApplyPhase:
-		return s.createPlanReport(ctx, runID)
+		return s.createApplyReport(ctx, runID)
 	default:
 		return otf.ResourceReport{}, fmt.Errorf("unknown supported phase for creating report: %s", phase)
 	}
