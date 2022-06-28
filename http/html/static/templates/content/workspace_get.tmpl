@@ -3,7 +3,7 @@
 {{ define "title" }}workspace: {{ .Content.Name }}{{ end }}
 
 {{ define "container-header" }}
-  <a href="{{ listWorkspacePath .Content }}">workspaces</a> / {{ .Content.Name }}
+  <a href="{{ listWorkspacePath .Content }}">workspaces</a> / {{ .Content.Name }} <span class="children">/ {queue,runs,variables,settings}</span>
 {{ end }}
 
 {{ define "container-header-actions" }}
@@ -19,6 +19,9 @@
   <div>
     <a href="{{ editWorkspacePath .Content }}">{{ template "cog_icon" }}</a>
   </div>
+{{ end }}
+
+{{ define "content" }}
   <div>v{{ .Content.TerraformVersion }}</div>
   <div class="workspace-lock">
     {{ if .Content.Locked }}
@@ -29,9 +32,6 @@
       <form action="{{ lockWorkspacePath .Content }}" method="POST"><button>Lock</button></form>
     {{ end }}
   </div>
-{{ end }}
-
-{{ define "content" }}
   <form action="{{ deleteWorkspacePath .Content }}" method="POST">
     <button class="delete" onclick="return confirm('Are you sure you want to delete?')">Delete workspace</button>
   </form>

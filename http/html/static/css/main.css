@@ -3,7 +3,8 @@
 }
 
 body {
-  font-family: Roboto,Helvetica Neue,sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, avenir next, avenir, segoe ui, helvetica neue, helvetica, Cantarell, Ubuntu, roboto, noto, arial, sans-serif;
+
 
   /*
    * two vertically stacked items straddling full height of viewport:
@@ -209,8 +210,16 @@ thead th:nth-child(4) {
 
 .container-header-title {
   font-size: 1.5em;
-
   display: flex;
+}
+
+.section-link {
+  font-size: 1.5em;
+}
+
+.children {
+  font-size: 0.8em;
+  color: grey;
 }
 
 .container-header-links {
@@ -391,3 +400,23 @@ button.delete:hover {
   color: black;
 }
 
+.item {
+  border: solid 1px #000;
+  margin-top: 10px;
+  padding: 10px;
+}
+
+.item-heading {
+  display: flex;
+  font-size: 1.0rem;
+  padding-bottom: 10px;
+}
+
+.item-heading .status {
+  margin-right: auto;
+}
+
+.item .id {
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 0.8rem;
+}
