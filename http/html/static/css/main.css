@@ -7,8 +7,9 @@ body {
 
 
   /*
-   * two vertically stacked items straddling full height of viewport:
-   * - div.body-container
+   * threee vertically stacked items straddling full height of viewport:
+   * - header
+   * - main
    * - footer
    */
   display: flex;
@@ -16,42 +17,80 @@ body {
   min-height: 100vh;
 }
 
-/*
- * Container for both header and main elements.
- */
-.body-container {
-  width: 100%;
-  max-width: 76em;
-
-  /* Center horizontally with a small gap at top and bottom */
-  margin: 0 auto;
-
-  /* Small gutter around edge */
-  padding: 0.5em;
-
-  /* Force footer down to bottom of viewport */
-  flex-grow: 1;
-
-  /*
-   * two vertically stacked items:
-   * - header
-   * - main
-   */
-  display: flex;
-  flex-direction: column;
-  gap: 0.6em;
-
-  /* Absolute positioned items are positioned relative to this container */
-  position: relative;
+header {
+  /* faint grey background */
+  background-color: #edeaea;
 }
 
 header nav {
+  /* Small gutter around edge */
+  padding: 0.5em;
+
   font-family: 'Courier New', Courier, monospace;
+
+  width: 100%;
+
+  /* applies to both header and main */
+  max-width: 72em;
+
+  /* Center horizontally */
+  margin: 0 auto;
+}
+
+/*
+ * navbar = logo + navigation links
+ */
+.navbar {
+  display: flex;
+  align-items: baseline;
+  gap: 2em;
+}
+
+.logo {
+  flex: initial;
+  padding: 0.4em;
+  line-height: 1em;
+  background-color: black;
+  color: white;
+  font-weight: 900;
+}
+
+.logo a:hover {
+  color: white;
+}
+
+.navbar .nav-links {
+  /* nav-links consume remainder of navbar */
+  flex-grow: 1;
+}
+
+.navbar .nav-links ul {
+  display: flex;
+  gap: 1em;
+}
+
+/*
+ * current organization link is left-aligned, next to logo, whereas
+ * remainder of links are right-aligned
+ */
+.navbar .nav-links li.current-organization {
+  margin-right: auto;
 }
 
 main {
+  width: 100%;
+
   /* Consume all remaining space below the header */
   flex-grow: 1;
+
+  /* applies to both header and main */
+  max-width: 72em;
+
+  /* Center horizontally */
+  margin: 0 auto;
+
+  /* Small gutter around edge */
+  padding: 0.5em 0.5em;
 
   /* vertical stack of:
    * - h2
@@ -67,6 +106,7 @@ footer {
   padding: 0.5em;
   text-align: center;
   font-size: 0.8em;
+  font-family: 'Courier New', Courier, monospace;
 }
 
 /* Unset browser style-sheet */
@@ -161,51 +201,14 @@ thead th:nth-child(4) {
   font-family: 'Courier New', Courier, monospace;
 }
 
-/*
- * navbar = logo + navigation links
- */
-.navbar {
-  display: flex;
-  align-items: baseline;
-  gap: 2em;
-}
-
-.logo {
-  flex: initial;
-  padding: 0.4em;
-  line-height: 1em;
-  background-color: black;
-  color: white;
-  font-weight: 900;
-}
-
-.logo a:hover {
-  color: white;
-}
-
-.navbar .nav-links {
-  /* nav-links consume remainder of navbar */
-  flex-grow: 1;
-}
-
-.navbar .nav-links ul {
-  display: flex;
-  gap: 1em;
-}
-
-/*
- * current organization link is left-aligned, next to logo, whereas
- * remainder of links are right-aligned
- */
-.navbar .nav-links li.current-organization {
-  margin-right: auto;
-}
-
 /* content-header: title + links */
 .content-header {
   display: inline-flex;
   align-items: center;
   gap: 1em;
+
+  padding-bottom: 0.5em;
+  border-bottom: 1px solid #edeaea;
 }
 
 .container-header-title {
@@ -360,46 +363,55 @@ thead th:nth-child(4) {
 }
 
 .workspace-lock {
-  display: flex;
+  display: inline-flex;
+  align-items: center;
   gap: 0.5em;
 }
 
-.workspace-lock .workspace-lock-status-locked {
-  background: #ff7070;
-  color: white;
-  font-weight: 700;
+.workspace-lock form {
+  display: inline-flex;
 }
 
-/*
- * Delete buttons
- */
+.workspace-lock-status-locked {
+  background: #ffd7b6;
+}
+
+.workspace-lock-status-unlocked {
+  background: #d4fdd4;
+}
+
+/* button that carries out destructive action */
 button.delete {
-  border: solid 1px #9f2937;
-  background: #c73445;
-  color: #fff;
-  font-weight: 700;
-  font-size: 1rem;
+  background: #ed6969;
+  border: none;
+  cursor: pointer;
+  color: white;
+  font-weight: 600;
+  line-height: 1.5rem;
 }
 
 button.delete:hover {
-  color: #f9ecee;
+  background: #e46060;
 }
 
-.smallcaps {
-  font-variant: small-caps;
-  font-size: 1.5rem;
+.status {
+  font-size: 1.1rem;
+  font-weight: bolder;
 }
 
 .status-planned_and_finished {
-  background: #ff933f;
-  color: white;
+  background: #bbf8ff;
 }
 
 .status-applied {
-  background: lightgreen;
-  color: black;
+  background: #bfffbf;
 }
 
+/*
+ * item is the 'row box' within the content area that spans the width
+ * of the screen and one of a number of rows that makes up a page of
+ * a listing. The item encloses metadata for the resource.
+ */
 .item {
   border: solid 1px #000;
   margin-top: 10px;
@@ -408,15 +420,27 @@ button.delete:hover {
 
 .item-heading {
   display: flex;
-  font-size: 1.0rem;
+  column-gap: 10px;
+  align-items: center;
   padding-bottom: 10px;
 }
 
-.item-heading .status {
-  margin-right: auto;
+.item-heading .status-ago {
+  margin-left: auto;
 }
 
 .item .id {
   font-family: 'Courier New', Courier, monospace;
   font-size: 0.8rem;
+}
+
+.content-menu {
+  display: flex;
+  flex-direction: column;
+  gap: 1em;
+}
+
+.data {
+  font-family: 'Courier New', Courier, monospace;
+  background: #e7e7e7;
 }

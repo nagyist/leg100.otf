@@ -14,12 +14,16 @@
   {{ range .Content.List.Items }}
   <div class="item">
     <div class="item-heading">
-      <span class="status status-{{ .Status }}">{{ .Status }}</span>
-      <span>{{ ago .CreatedAt }} ago</span>
+      <span class="smallcaps status"><span class="status-{{ .Status }}">{{ .Status.String | replace "_" " "}}</span></span>
+      <span>|</span>
+      <span><a href="{{ getPlanPath . }}">plan</a></span>
+      {{ if not .PlanOnly }}
+        <span>|</span>
+        <span><a href="{{ getApplyPath . }}">apply</a></span>
+      {{ end }}
+      <span class="status-ago">{{ ago .CreatedAt }} ago</span>
     </div>
     <div class="id"><a class="identifier" href="{{ getRunPath . }}">{{ .ID }}</a></div>
-    <div><a href="{{ getPlanPath . }}">logs</a></div>
-    <div><a href="{{ getApplyPath . }}">logs</a></div>
   </div>
   {{ end }}
 {{ end }}
