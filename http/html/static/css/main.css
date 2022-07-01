@@ -42,7 +42,6 @@ header nav {
  */
 .navbar {
   display: flex;
-  align-items: baseline;
   gap: 2em;
 }
 
@@ -429,7 +428,13 @@ button.delete:hover {
   margin-left: auto;
 }
 
-.item .id {
+.item-content {
+  display: flex;
+  column-gap: 10px;
+  align-items: center;
+}
+
+.item-content .id {
   font-family: 'Courier New', Courier, monospace;
   font-size: 0.8rem;
 }
