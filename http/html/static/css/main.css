@@ -91,6 +91,7 @@ header nav {
  */
 .navbar {
   display: flex;
+  align-items: baseline;
   gap: 2em;
 }
 
