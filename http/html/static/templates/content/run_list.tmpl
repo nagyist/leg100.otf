@@ -23,7 +23,7 @@
       {{ end }}
       <span class="status-ago">{{ ago .CreatedAt }} ago</span>
     </div>
-    <div class="id"><a class="identifier" href="{{ getRunPath . }}">{{ .ID }}</a></div>
+    <div class="identifier-container"><a class="identifier">{{ .ID }}</a></div>
   </div>
   {{ end }}
 {{ end }}
