@@ -23,7 +23,7 @@
       {{ end }}
       <span class="status-ago">{{ ago .CreatedAt }} ago</span>
     </div>
-    <div class="identifier-container"><a class="identifier">{{ .ID }}</a></div>
+    {{ template "identifier" . }}
   </div>
   {{ end }}
 {{ end }}

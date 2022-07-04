@@ -20,8 +20,8 @@
       {{ if eq .Token $.CurrentSession.Token }} &#10004; {{ end }}
       <span class="status-ago">Created {{ ago .CreatedAt }} ago</span>
     </div>
-    <div class="identifier-container item-content">
-      <a class="identifier">{{ .Token }}</a>
+    <div class="item-content">
+      {{ template "identifier" . }}
       {{ if ne .Token $.CurrentSession.Token }}
       <form action="{{ revokeSessionPath }}" method="POST">
         <button class="delete">Revoke</button>

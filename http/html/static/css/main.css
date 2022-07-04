@@ -91,7 +91,7 @@ header nav {
  */
 .navbar {
   display: flex;
-  align-items: baseline;
+  align-items: center;
   gap: 2em;
 }
 
@@ -112,6 +112,7 @@ header nav {
 .navbar .nav-links {
   /* nav-links consume remainder of navbar */
   flex-grow: 1;
+  align-items: center;
 }
 
 .navbar .nav-links ul {

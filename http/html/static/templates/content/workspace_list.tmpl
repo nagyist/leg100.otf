@@ -16,7 +16,7 @@
     <div class="item-heading">
       <a class="status" href="{{ getWorkspacePath . }}">{{ .Name }}</a>
     </div>
-    <div class="identifier-container"><a class="identifier">{{ .ID }}</a></div>
+    {{ template "identifier" . }}
   </div>
   {{ end }}
 {{ end }}
