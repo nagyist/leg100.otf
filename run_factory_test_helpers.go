@@ -12,7 +12,11 @@ func NewTestRun(t *testing.T, opts TestRunCreateOptions) *Run {
 	org, err := NewOrganization(OrganizationCreateOptions{Name: String("test-org")})
 	require.NoError(t, err)
 
-	ws, err := NewWorkspace(org, WorkspaceCreateOptions{Name: "test-ws", AutoApply: Bool(opts.AutoApply)})
+	ws, err := NewWorkspace(org, WorkspaceCreateOptions{
+		Name:             "test-ws",
+		AutoApply:        Bool(opts.AutoApply),
+		TerraformVersion: opts.TerraformVersion,
+	})
 	require.NoError(t, err)
 
 	cv, err := NewConfigurationVersion(ws.ID(), ConfigurationVersionCreateOptions{Speculative: Bool(opts.Speculative)})
@@ -23,6 +27,14 @@ func NewTestRun(t *testing.T, opts TestRunCreateOptions) *Run {
 		run.updateStatus(opts.Status)
 	}
 	return run
+}
+
+// TestRunCreateOptions is for testing purposes only.
+type TestRunCreateOptions struct {
+	Speculative      bool
+	Status           RunStatus
+	AutoApply        bool
+	TerraformVersion *string
 }
 
 type fakeRunFactoryWorkspaceService struct {

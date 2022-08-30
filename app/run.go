@@ -456,7 +456,7 @@ func (a *Application) PutChunk(ctx context.Context, runID string, phase otf.Phas
 		a.Error(err, "writing logs", "id", runID, "start", chunk.Start, "end", chunk.End)
 		return err
 	}
-	a.V(2).Info("written logs", "id", runID, "start", chunk.Start, "end", chunk.End)
+	a.V(2).Info("written logs", "id", runID, "start", chunk.Start, "end", chunk.End, "size", len(chunk.Data))
 
 	return nil
 }

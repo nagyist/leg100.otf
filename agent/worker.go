@@ -30,8 +30,7 @@ func (w *Worker) handle(ctx context.Context, run *otf.Run) {
 	env, err := NewEnvironment(
 		log,
 		w.Application,
-		run.ID(),
-		run.Phase(),
+		run,
 		ctx,
 		w.environmentVariables,
 	)

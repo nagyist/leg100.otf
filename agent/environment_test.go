@@ -71,11 +71,12 @@ func TestEnvironment_Container(t *testing.T) {
 func newTestEnvironment(t *testing.T) (*Environment, *fakeWriteCloser) {
 	pluginDir := t.TempDir()
 
+	run := otf.NewTestRun(t, otf.TestRunCreateOptions{})
+
 	env, err := NewEnvironment(
 		logr.Discard(),
 		nil,
-		"run-123",
-		otf.PlanPhase,
+		run,
 		context.Background(),
 		[]string{
 			"TF_PLUGIN_CACHE_DIR=" + pluginDir,

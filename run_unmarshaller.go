@@ -28,6 +28,7 @@ type RunDBResult struct {
 	Speculative            bool                          `json:"speculative"`
 	AutoApply              bool                          `json:"auto_apply"`
 	WorkspaceName          pgtype.Text                   `json:"workspace_name"`
+	TerraformVersion       pgtype.Text                   `json:"terraform_version"`
 	OrganizationName       pgtype.Text                   `json:"organization_name"`
 	RunStatusTimestamps    []pggen.RunStatusTimestamps   `json:"run_status_timestamps"`
 	PlanStatusTimestamps   []pggen.PhaseStatusTimestamps `json:"plan_status_timestamps"`
@@ -52,6 +53,7 @@ func UnmarshalRunDBResult(result RunDBResult) (*Run, error) {
 		organizationName:       result.OrganizationName.String,
 		workspaceID:            result.WorkspaceID.String,
 		configurationVersionID: result.ConfigurationVersionID.String,
+		terraformVersion:       result.TerraformVersion.String,
 		plan: &Plan{
 			runID: result.RunID.String,
 			phaseStatus: &phaseStatus{

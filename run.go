@@ -80,6 +80,7 @@ type Run struct {
 	statusTimestamps       []RunStatusTimestamp
 	replaceAddrs           []string
 	targetAddrs            []string
+	terraformVersion       string
 	organizationName       string
 	workspaceName          string
 	workspaceID            string
@@ -107,10 +108,19 @@ func (r *Run) Status() RunStatus                      { return r.status }
 func (r *Run) StatusTimestamps() []RunStatusTimestamp { return r.statusTimestamps }
 func (r *Run) WorkspaceName() string                  { return r.workspaceName }
 func (r *Run) WorkspaceID() string                    { return r.workspaceID }
-func (r *Run) Workspace() *Workspace                  { return r.workspace }
-func (r *Run) ConfigurationVersionID() string         { return r.configurationVersionID }
-func (r *Run) Plan() *Plan                            { return r.plan }
-func (r *Run) Apply() *Apply                          { return r.apply }
+
+// Workspace returns run's workspace object
+//
+// TODO: Remove. A run only retains a reference to its workspace object purely
+// for the purposes of converting into a JSON-API object with a workspace
+// "side-loaded", and that is done within ToJSONAPI(), rendering Workspace()
+// unnecessary (and potentially dangerous since a run is not guaranteed to
+// retain a reference!).
+func (r *Run) Workspace() *Workspace          { return r.workspace }
+func (r *Run) TerraformVersion() string       { return r.terraformVersion }
+func (r *Run) ConfigurationVersionID() string { return r.configurationVersionID }
+func (r *Run) Plan() *Plan                    { return r.plan }
+func (r *Run) Apply() *Apply                  { return r.apply }
 
 // CanAccess always return true - some actions are invoked on behalf of a run,
 // e.g. locking a workpace for a run
@@ -752,13 +762,6 @@ type RunCreateOptions struct {
 	TargetAddrs            []string
 	ReplaceAddrs           []string
 	WorkspaceSpec          WorkspaceSpec
-}
-
-// TestRunCreateOptions is for testing purposes only.
-type TestRunCreateOptions struct {
-	Speculative bool
-	Status      RunStatus
-	AutoApply   bool
 }
 
 // RunApplyOptions represents the options for applying a run.

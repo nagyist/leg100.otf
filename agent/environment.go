@@ -55,6 +55,9 @@ type Environment struct {
 
 	environmentVariables []string
 
+	// docker image to be used in this env
+	image string
+
 	// Environment context - should contain subject for authenticating to
 	// services
 	ctx context.Context
@@ -63,8 +66,7 @@ type Environment struct {
 func NewEnvironment(
 	logger logr.Logger,
 	app otf.Application,
-	runID string,
-	phase otf.PhaseType,
+	run *otf.Run,
 	ctx context.Context,
 	environmentVariables []string) (*Environment, error) {
 
@@ -74,8 +76,8 @@ func NewEnvironment(
 	}
 
 	out := &otf.JobWriter{
-		ID:         runID,
-		Phase:      phase,
+		ID:         run.ID(),
+		Phase:      run.Phase(),
 		Logger:     logger,
 		LogService: app,
 	}
@@ -96,6 +98,7 @@ func NewEnvironment(
 		path:                 path,
 		environmentVariables: environmentVariables,
 		client:               client,
+		image:                "hashicorp/terraform:" + run.TerraformVersion(),
 		cancel:               cancel,
 		ctx:                  ctx,
 	}, nil
@@ -140,16 +143,16 @@ func (e *Environment) RunCLI(name string, args ...string) error {
 	}
 
 	images, err := e.client.ImageList(e.ctx, types.ImageListOptions{
-		Filters: filters.NewArgs(filters.Arg("reference", otf.DefaultTerraformImage)),
+		Filters: filters.NewArgs(filters.Arg("reference", e.image)),
 	})
 	if err != nil {
 		return fmt.Errorf("listing images: %w", err)
 	}
 	if len(images) == 0 {
-		// No image found; pull it
-		resp, err := e.client.ImagePull(e.ctx, otf.DefaultTerraformImage, types.ImagePullOptions{})
+		e.Info("pulling terraform image", "image", e.image)
+		resp, err := e.client.ImagePull(e.ctx, e.image, types.ImagePullOptions{})
 		if err != nil {
-			return fmt.Errorf("pulling image: %w", err)
+			return fmt.Errorf("pulling image: %s: %w", e.image, err)
 		}
 		defer resp.Close()
 		// Relay download progress to the env output
@@ -163,7 +166,7 @@ func (e *Environment) RunCLI(name string, args ...string) error {
 		e.ctx,
 		&container.Config{
 			Entrypoint: []string{name},
-			Image:      otf.DefaultTerraformImage,
+			Image:      e.image,
 			Cmd:        args,
 			Env:        e.environmentVariables,
 			Tty:        false,
