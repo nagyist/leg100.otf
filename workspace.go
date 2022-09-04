@@ -7,7 +7,7 @@ import (
 	"net/http"
 	"time"
 
-	jsonapi "github.com/leg100/otf/http/dto"
+	tfe "github.com/hashicorp/go-tfe"
 )
 
 const (
@@ -186,9 +186,9 @@ func (ws *Workspace) UpdateWithOptions(ctx context.Context, opts WorkspaceUpdate
 
 // ToJSONAPI assembles a JSONAPI DTO
 func (ws *Workspace) ToJSONAPI(req *http.Request) any {
-	dto := &jsonapi.Workspace{
+	dto := &tfe.Workspace{
 		ID: ws.ID(),
-		Actions: &jsonapi.WorkspaceActions{
+		Actions: &tfe.WorkspaceActions{
 			IsDestroyable: false,
 		},
 		AllowDestroyPlan:     ws.AllowDestroyPlan(),
@@ -205,7 +205,7 @@ func (ws *Workspace) ToJSONAPI(req *http.Request) any {
 		Name:                 ws.Name(),
 		// Operations is deprecated but clients and go-tfe tests still use it
 		Operations: ws.ExecutionMode() == "remote",
-		Permissions: &jsonapi.WorkspacePermissions{
+		Permissions: &tfe.WorkspacePermissions{
 			CanDestroy:        true,
 			CanForceUnlock:    true,
 			CanLock:           true,
@@ -228,9 +228,9 @@ func (ws *Workspace) ToJSONAPI(req *http.Request) any {
 		UpdatedAt:                  ws.UpdatedAt(),
 	}
 	if ws.organization != nil {
-		dto.Organization = ws.organization.ToJSONAPI(req).(*jsonapi.Organization)
+		dto.Organization = ws.organization.ToJSONAPI(req).(*tfe.Organization)
 	} else {
-		dto.Organization = &jsonapi.Organization{ExternalID: ws.OrganizationID()}
+		dto.Organization = &tfe.Organization{ExternalID: ws.OrganizationID()}
 	}
 	return dto
 }
@@ -292,11 +292,11 @@ type WorkspaceList struct {
 
 // ToJSONAPI assembles a JSON-API DTO.
 func (l *WorkspaceList) ToJSONAPI(req *http.Request) any {
-	dto := &jsonapi.WorkspaceList{
-		Pagination: l.Pagination.ToJSONAPI(),
+	dto := &tfe.WorkspaceList{
+		Pagination: l.Pagination.ToTFE(),
 	}
 	for _, item := range l.Items {
-		dto.Items = append(dto.Items, item.ToJSONAPI(req).(*jsonapi.Workspace))
+		dto.Items = append(dto.Items, item.ToJSONAPI(req).(*tfe.Workspace))
 	}
 	return dto
 }

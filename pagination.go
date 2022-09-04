@@ -5,6 +5,7 @@ import (
 	"net/url"
 	"strconv"
 
+	tfe "github.com/hashicorp/go-tfe"
 	jsonapi "github.com/leg100/otf/http/dto"
 )
 
@@ -56,6 +57,22 @@ func (p *Pagination) ToJSONAPI() *jsonapi.Pagination {
 		TotalPages:   p.TotalPages(),
 		TotalCount:   p.count,
 	}
+}
+
+// ToTFE assembles a JSON-API DTO for wire serialization.
+func (p *Pagination) ToTFE() *tfe.Pagination {
+	dto := &tfe.Pagination{
+		CurrentPage: p.opts.sanitizedPageNumber(),
+		TotalPages:  p.TotalPages(),
+		TotalCount:  p.count,
+	}
+	if p.PrevPage() == nil {
+		dto.PreviousPage = 0
+	}
+	if p.NextPage() == nil {
+		dto.NextPage = 0
+	}
+	return dto
 }
 
 // NewPagination constructs a Pagination obj.

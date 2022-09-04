@@ -3,6 +3,7 @@ package http
 import (
 	"net/http"
 
+	hjsonapi "github.com/hashicorp/jsonapi"
 	"github.com/leg100/jsonapi"
 	"github.com/leg100/otf"
 	"github.com/leg100/otf/http/decode"
@@ -46,7 +47,7 @@ func (s *Server) CreateWorkspace(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusNotFound, err)
 		return
 	}
-	writeResponse(w, r, ws, withCode(http.StatusCreated))
+	writeTFEResponse(w, r, ws, withCode(http.StatusCreated))
 }
 
 func (s *Server) GetWorkspace(w http.ResponseWriter, r *http.Request) {
@@ -64,7 +65,7 @@ func (s *Server) GetWorkspace(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusNotFound, err)
 		return
 	}
-	writeResponse(w, r, ws)
+	writeTFEResponse(w, r, ws)
 }
 
 func (s *Server) ListWorkspaces(w http.ResponseWriter, r *http.Request) {
@@ -82,7 +83,7 @@ func (s *Server) ListWorkspaces(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusNotFound, err)
 		return
 	}
-	writeResponse(w, r, ws)
+	writeTFEResponse(w, r, ws)
 }
 
 func (s *Server) UpdateWorkspace(w http.ResponseWriter, r *http.Request) {
@@ -119,7 +120,7 @@ func (s *Server) UpdateWorkspace(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusNotFound, err)
 		return
 	}
-	writeResponse(w, r, ws)
+	writeTFEResponse(w, r, ws)
 }
 
 func (s *Server) LockWorkspace(w http.ResponseWriter, r *http.Request) {
@@ -141,7 +142,7 @@ func (s *Server) LockWorkspace(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusNotFound, err)
 		return
 	}
-	writeResponse(w, r, ws)
+	writeTFEResponse(w, r, ws)
 }
 
 func (s *Server) UnlockWorkspace(w http.ResponseWriter, r *http.Request) {
@@ -159,7 +160,7 @@ func (s *Server) UnlockWorkspace(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusNotFound, err)
 		return
 	}
-	writeResponse(w, r, ws)
+	writeTFEResponse(w, r, ws)
 }
 
 func (s *Server) DeleteWorkspace(w http.ResponseWriter, r *http.Request) {
@@ -173,4 +174,21 @@ func (s *Server) DeleteWorkspace(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	w.WriteHeader(http.StatusNoContent)
+}
+
+func writeTFEResponse(w http.ResponseWriter, r *http.Request, obj dto.Assembler, opts ...func(http.ResponseWriter)) {
+	w.Header().Set("Content-type", jsonapi.MediaType)
+	for _, o := range opts {
+		o(w)
+	}
+	// Only sideline relationships for responses to GET requests
+	var err error
+	if r.Method == "GET" {
+		err = hjsonapi.MarshalPayload(w, obj.ToJSONAPI(r))
+	} else {
+		err = hjsonapi.MarshalPayloadWithoutIncluded(w, obj.ToJSONAPI(r))
+	}
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, err)
+	}
 }

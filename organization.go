@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"time"
 
+	tfe "github.com/hashicorp/go-tfe"
 	jsonapi "github.com/leg100/otf/http/dto"
 )
 
@@ -34,11 +35,15 @@ func (org *Organization) SessionTimeout() int      { return org.sessionTimeout }
 
 // ToJSONAPI assembles a JSONAPI DTO
 func (org *Organization) ToJSONAPI(req *http.Request) any {
-	return &jsonapi.Organization{
-		Name:            org.Name(),
-		CreatedAt:       org.CreatedAt(),
-		ExternalID:      org.ID(),
-		Permissions:     &jsonapi.DefaultOrganizationPermissions,
+	return &tfe.Organization{
+		Name:       org.Name(),
+		CreatedAt:  org.CreatedAt(),
+		ExternalID: org.ID(),
+		Permissions: &tfe.OrganizationPermissions{
+			CanCreateWorkspace: true,
+			CanUpdate:          true,
+			CanDestroy:         true,
+		},
 		SessionRemember: org.SessionRemember(),
 		SessionTimeout:  org.SessionTimeout(),
 	}
