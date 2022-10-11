@@ -8,32 +8,32 @@ import (
 	"github.com/leg100/otf"
 )
 
-type workspaceMapper struct {
+type teamMapper struct {
 	mu sync.Mutex
-	// map workspace id to organization name
+	// map team id to organization name
 	idOrgMap map[string]string
-	// map qualified workspace name to workspace id
-	nameIDMap map[otf.WorkspaceQualifiedName]string
+	// map qualified team name to team id
+	nameIDMap map[otf.TeamQualifiedName]string
 }
 
-func newWorkspaceMapper() *workspaceMapper {
-	return &workspaceMapper{
+func newTeamMapper() *teamMapper {
+	return &teamMapper{
 		idOrgMap:  make(map[string]string),
-		nameIDMap: make(map[otf.WorkspaceQualifiedName]string),
+		nameIDMap: make(map[otf.TeamQualifiedName]string),
 	}
 }
 
-func (m *workspaceMapper) populate(ctx context.Context, svc otf.WorkspaceService) error {
-	opts := otf.WorkspaceListOptions{ListOptions: otf.ListOptions{PageSize: 100}}
+func (m *teamMapper) populate(ctx context.Context, svc otf.TeamService) error {
+	opts := otf.TeamListOptions{}
 	var allocated bool
 	for {
-		listing, err := svc.ListWorkspaces(ctx, opts)
+		listing, err := svc.ListTeams(ctx, opts)
 		if err != nil {
-			return fmt.Errorf("populating workspace mapper: %w", err)
+			return fmt.Errorf("populating team mapper: %w", err)
 		}
 		if !allocated {
 			m.idOrgMap = make(map[string]string, listing.TotalCount())
-			m.nameIDMap = make(map[otf.WorkspaceQualifiedName]string, listing.TotalCount())
+			m.nameIDMap = make(map[otf.TeamQualifiedName]string, listing.TotalCount())
 			allocated = true
 		}
 		for _, ws := range listing.Items {
@@ -47,25 +47,25 @@ func (m *workspaceMapper) populate(ctx context.Context, svc otf.WorkspaceService
 	return nil
 }
 
-func (m *workspaceMapper) add(ws *otf.Workspace) {
+func (m *teamMapper) add(ws *otf.Team) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
 	m.addWithoutLock(ws)
 }
 
-func (m *workspaceMapper) addWithoutLock(ws *otf.Workspace) {
+func (m *teamMapper) addWithoutLock(ws *otf.Team) {
 	m.idOrgMap[ws.ID()] = ws.OrganizationName()
 	m.nameIDMap[ws.QualifiedName()] = ws.ID()
 }
 
-// update the mapping for a workspace that has been renamed
-func (m *workspaceMapper) update(ws *otf.Workspace) {
+// update the mapping for a team that has been renamed
+func (m *teamMapper) update(ws *otf.Team) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
 	// we don't have the old name to hand, so we have to enumerate every entry
-	// and look for a workspace with a matching name.
+	// and look for a team with a matching name.
 	for qualified, id := range m.nameIDMap {
 		if ws.ID() == id {
 			// remove old entry
@@ -77,19 +77,19 @@ func (m *workspaceMapper) update(ws *otf.Workspace) {
 	}
 }
 
-// LookupWorkspaceID looks up the ID of the workspace given its name and
+// LookupTeamID looks up the ID of the team given its name and
 // organization name.
-func (m *workspaceMapper) lookupID(org, name string) string {
+func (m *teamMapper) lookupID(org, name string) string {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
-	return m.nameIDMap[otf.WorkspaceQualifiedName{
+	return m.nameIDMap[otf.TeamQualifiedName{
 		Name:         name,
 		Organization: org,
 	}]
 }
 
-func (m *workspaceMapper) remove(ws *otf.Workspace) {
+func (m *teamMapper) remove(ws *otf.Team) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
@@ -97,14 +97,14 @@ func (m *workspaceMapper) remove(ws *otf.Workspace) {
 	delete(m.nameIDMap, ws.QualifiedName())
 }
 
-func (m *workspaceMapper) lookupOrganizationByID(workspaceID string) string {
+func (m *teamMapper) lookupOrganizationByID(teamID string) string {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
-	return m.idOrgMap[workspaceID]
+	return m.idOrgMap[teamID]
 }
 
-func (m *workspaceMapper) lookupOrganizationBySpec(spec otf.WorkspaceSpec) (string, bool) {
+func (m *teamMapper) lookupOrganizationBySpec(spec otf.TeamSpec) (string, bool) {
 	if spec.OrganizationName != nil {
 		return *spec.OrganizationName, true
 	} else if spec.ID != nil {

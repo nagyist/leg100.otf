@@ -70,6 +70,13 @@ type TeamSpec struct {
 	OrganizationName *string
 }
 
+// TeamQualifiedName is the teams's fully qualified name including the
+// name of its organization
+type TeamQualifiedName struct {
+	Organization string
+	Name         string
+}
+
 // KeyValue returns the team spec in key-value form. Useful for logging
 // purposes.
 func (spec *TeamSpec) KeyValue() []any {

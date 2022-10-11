@@ -7,6 +7,10 @@ import (
 )
 
 func (a *Application) CreateTeam(ctx context.Context, name, organizationName string) (*otf.Team, error) {
+	if !otf.CanAccess(ctx, &organizationName) {
+		return nil, otf.ErrAccessNotPermitted
+	}
+
 	org, err := a.db.GetOrganization(ctx, organizationName)
 	if err != nil {
 		return nil, err
@@ -20,10 +24,16 @@ func (a *Application) CreateTeam(ctx context.Context, name, organizationName str
 	}
 	a.V(0).Info("created team", "name", name, "organization", organizationName)
 
+	a.Publish(otf.Event{Type: otf.EventTeamCreated, Payload: team})
+
 	return team, nil
 }
 
 func (a *Application) UpdateTeam(ctx context.Context, spec otf.TeamSpec, opts otf.TeamUpdateOptions) (*otf.Team, error) {
+	if !a.CanAccessTeam(ctx, &organizationName) {
+		return nil, otf.ErrAccessNotPermitted
+	}
+
 	team, err := a.db.UpdateTeam(ctx, spec, func(team *otf.Team) error {
 		return team.Update(opts)
 	})

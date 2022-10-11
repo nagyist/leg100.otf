@@ -22,6 +22,7 @@ type Mapper struct {
 	otf.Application
 	workspaces *workspaceMapper
 	runs       *runMapper
+	teams      *teamMapper
 }
 
 // NewMapper constructs the mapper
@@ -35,6 +36,8 @@ func NewMapper(app otf.Application) *Mapper {
 
 // Start the mapper, populate entries from the DB, and watch changes, updating
 // mappings accordingly.
+//
+// TODO: backoff and retry on error
 func (m *Mapper) Start(ctx context.Context) error {
 	// Register for events first so we don't miss any.
 	sub, err := m.Watch(ctx, otf.WatchOptions{})
@@ -73,6 +76,13 @@ func (m *Mapper) Start(ctx context.Context) error {
 					m.runs.add(obj)
 				case otf.EventRunDeleted:
 					m.runs.remove(obj)
+				}
+			case *otf.Team:
+				switch event.Type {
+				case otf.EventTeamCreated:
+					m.teams.add(obj)
+				case otf.EventTeamDeleted:
+					m.teams.remove(obj)
 				}
 			}
 		}
@@ -114,6 +124,16 @@ func (m *Mapper) CanAccessRun(ctx context.Context, runID string) bool {
 // workspace specified by the spec.
 func (m *Mapper) CanAccessWorkspace(ctx context.Context, spec otf.WorkspaceSpec) bool {
 	orgName, ok := m.workspaces.lookupOrganizationBySpec(spec)
+	if !ok {
+		return false
+	}
+	return otf.CanAccess(ctx, &orgName)
+}
+
+// CanAccessTeam determines if the caller is permitted to access the
+// team specified by the spec.
+func (m *Mapper) CanAccessTeam(ctx context.Context, spec otf.TeamSpec) bool {
+	orgName, ok := m.teams.lookupOrganizationBySpec(spec)
 	if !ok {
 		return false
 	}

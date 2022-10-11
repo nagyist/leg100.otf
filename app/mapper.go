@@ -14,4 +14,5 @@ type Mapper interface {
 
 	CanAccessRun(ctx context.Context, runID string) bool
 	CanAccessWorkspace(ctx context.Context, spec otf.WorkspaceSpec) bool
+	CanAccessTeam(ctx context.Context, spec otf.TeamSpec) bool
 }

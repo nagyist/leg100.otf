@@ -10,16 +10,16 @@ const (
 	EventWorkspaceCreated    EventType = "workspace_created"
 	EventWorkspaceRenamed    EventType = "workspace_renamed"
 	EventWorkspaceDeleted    EventType = "workspace_deleted"
-	// EventLatestRunUpdate is an update to the "latest" run for a workspace
-	EventLatestRunUpdate EventType = "run_latest_update"
-	EventRunCreated      EventType = "run_created"
-	EventRunStatusUpdate EventType = "run_status_update"
-	EventRunDeleted      EventType = "run_deleted"
-	EventRunCancel       EventType = "run_cancel"
-	EventRunForceCancel  EventType = "run_force_cancel"
-	EventError           EventType = "error"
-	EventInfo            EventType = "info"
-	EventLogChunk        EventType = "log_update"
+	EventRunCreated          EventType = "run_created"
+	EventRunStatusUpdate     EventType = "run_status_update"
+	EventRunDeleted          EventType = "run_deleted"
+	EventRunCancel           EventType = "run_cancel"
+	EventRunForceCancel      EventType = "run_force_cancel"
+	EventTeamCreated         EventType = "team_created"
+	EventTeamDeleted         EventType = "team_deleted"
+	EventError               EventType = "error"
+	EventInfo                EventType = "info"
+	EventLogChunk            EventType = "log_update"
 )
 
 // EventType identifies the type of event
