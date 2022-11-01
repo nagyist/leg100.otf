@@ -15,7 +15,7 @@ import (
 	"github.com/allegro/bigcache"
 	"github.com/go-logr/logr"
 	"github.com/leg100/otf"
-	"github.com/leg100/signer"
+	"github.com/leg100/surl"
 )
 
 const (
@@ -71,7 +71,7 @@ type Server struct {
 	eventsServer *sse.Server
 	// the http router, exported so that other pkgs can add routes
 	*Router
-	*signer.Signer
+	*surl.Signer
 }
 
 // NewServer is the constructor for Server
@@ -82,7 +82,13 @@ func NewServer(logger logr.Logger, cfg ServerConfig, app otf.Application, db otf
 		ServerConfig: cfg,
 		Application:  app,
 		eventsServer: newSSEServer(),
-		Signer:       signer.New([]byte(cfg.Secret), signer.SkipQuery()),
+		// Signer creates signed URLs which the terraform CLI uses. By default,
+		// the signer stores the signature in a query parameter, however the
+		// terraform CLI removes query parameters from the signed URL (!). So we
+		// configure the signer to instead store the signature in the path
+		// itself. The CLI also appends its own query parameters, so we also
+		// configure the signer to ignore query parameters.
+		Signer: surl.New([]byte(cfg.Secret), surl.PrefixPath("/signed"), surl.SkipQuery(), surl.WithPathFormatter()),
 	}
 
 	if err := cfg.Validate(); err != nil {
