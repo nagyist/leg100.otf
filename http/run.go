@@ -294,7 +294,7 @@ func (r *Run) ToJSONAPI() any {
 		panic(err.Error())
 	}
 	policy := &otf.WorkspacePolicy{
-		OrganizationName: r.OrganizationName(),
+		OrganizationName: r.Organization(),
 		WorkspaceID:      r.WorkspaceID(),
 		Permissions:      perms,
 	}

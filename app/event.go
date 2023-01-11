@@ -18,15 +18,15 @@ type WorkspaceResource interface {
 // TODO: apply watch options
 func (a *Application) Watch(ctx context.Context, opts otf.WatchOptions) (<-chan otf.Event, error) {
 	var err error
-	if opts.OrganizationName != nil && opts.WorkspaceName != nil {
+	if opts.Organization != nil && opts.WorkspaceName != nil {
 		// caller must have workspace-level read permissions
 		_, err = a.CanAccessWorkspace(ctx, otf.WatchAction, otf.WorkspaceSpec{
 			Name:             opts.WorkspaceName,
-			OrganizationName: opts.OrganizationName,
+			OrganizationName: opts.Organization,
 		})
-	} else if opts.OrganizationName != nil {
+	} else if opts.Organization != nil {
 		// caller must have organization-level read permissions
-		_, err = a.CanAccessOrganization(ctx, otf.WatchAction, *opts.OrganizationName)
+		_, err = a.CanAccessOrganization(ctx, otf.WatchAction, *opts.Organization)
 	}
 	if err != nil {
 		return nil, err
@@ -57,8 +57,8 @@ func (a *Application) Watch(ctx context.Context, opts otf.WatchOptions) (<-chan 
 					continue
 				}
 				// apply optional organization filter
-				if opts.OrganizationName != nil {
-					if res.OrganizationName() != *opts.OrganizationName {
+				if opts.Organization != nil {
+					if res.OrganizationName() != *opts.Organization {
 						continue
 					}
 				}

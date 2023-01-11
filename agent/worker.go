@@ -35,7 +35,7 @@ func (w *Worker) handle(ctx context.Context, run *otf.Run) {
 	//
 	// TODO: TF_TOKEN_* environment variables are only supported from terraform
 	// v1.20 onwards. We should set that as the min version for use with otf.
-	session, err := w.CreateRegistrySession(ctx, run.OrganizationName())
+	session, err := w.CreateRegistrySession(ctx, run.Organization())
 	if err != nil {
 		log.Error(err, "creating registry session")
 		return

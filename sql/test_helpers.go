@@ -178,7 +178,7 @@ func createTestToken(t *testing.T, db otf.DB, userID, description string) *otf.T
 func newTestVCSProvider(t *testing.T, org *otf.Organization) *otf.VCSProvider {
 	factory := &otf.VCSProviderFactory{inmem.NewTestCloudService()}
 	provider, err := factory.NewVCSProvider(otf.VCSProviderCreateOptions{
-		OrganizationName: org.Name(),
+		Organization: org.Name(),
 		// unit tests require a legitimate cloud name to avoid invalid foreign
 		// key error upon insert/update
 		Cloud: "github",

@@ -259,7 +259,7 @@ func (app *Application) watchWorkspace(w http.ResponseWriter, r *http.Request) {
 	}
 	events, err := app.Watch(r.Context(), otf.WatchOptions{
 		WorkspaceName:    otf.String(ws.Name()),
-		OrganizationName: otf.String(ws.OrganizationName()),
+		Organization: otf.String(ws.OrganizationName()),
 	})
 	if err != nil {
 		writeError(w, err.Error(), http.StatusInternalServerError)

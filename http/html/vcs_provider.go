@@ -39,7 +39,7 @@ func (app *Application) createVCSProvider(w http.ResponseWriter, r *http.Request
 	}
 
 	provider, err := app.CreateVCSProvider(r.Context(), otf.VCSProviderCreateOptions{
-		OrganizationName: params.OrganizationName,
+		Organization: params.OrganizationName,
 		Token:            params.Token,
 		Name:             params.Name,
 		Cloud:            params.Cloud,

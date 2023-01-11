@@ -54,7 +54,7 @@ type Workspace struct {
 	terraformVersion           string
 	triggerPrefixes            []string
 	workingDirectory           string
-	organization               *Organization
+	organization               string
 	latestRunID                *string
 	repo                       *WorkspaceRepo
 }
@@ -62,7 +62,7 @@ type Workspace struct {
 func (ws *Workspace) ID() string                       { return ws.id }
 func (ws *Workspace) CreatedAt() time.Time             { return ws.createdAt }
 func (ws *Workspace) UpdatedAt() time.Time             { return ws.updatedAt }
-func (ws *Workspace) String() string                   { return ws.organization.Name() + "/" + ws.name }
+func (ws *Workspace) String() string                   { return ws.organization + "/" + ws.name }
 func (ws *Workspace) Name() string                     { return ws.name }
 func (ws *Workspace) WorkspaceName() string            { return ws.name }
 func (ws *Workspace) AllowDestroyPlan() bool           { return ws.allowDestroyPlan }
@@ -83,9 +83,7 @@ func (ws *Workspace) StructuredRunOutputEnabled() bool { return ws.structuredRun
 func (ws *Workspace) TerraformVersion() string         { return ws.terraformVersion }
 func (ws *Workspace) TriggerPrefixes() []string        { return ws.triggerPrefixes }
 func (ws *Workspace) WorkingDirectory() string         { return ws.workingDirectory }
-func (ws *Workspace) OrganizationID() string           { return ws.organization.id }
-func (ws *Workspace) OrganizationName() string         { return ws.organization.name }
-func (ws *Workspace) Organization() *Organization      { return ws.organization }
+func (ws *Workspace) Organization() string             { return ws.organization }
 func (ws *Workspace) LatestRunID() *string             { return ws.latestRunID }
 func (ws *Workspace) Repo() *WorkspaceRepo             { return ws.repo }
 
@@ -98,8 +96,8 @@ func (ws *Workspace) ExecutionModes() []string {
 // its organization
 func (ws *Workspace) QualifiedName() WorkspaceQualifiedName {
 	return WorkspaceQualifiedName{
-		Organization: ws.OrganizationName(),
-		Name:         ws.Name(),
+		Organization: ws.organization,
+		Name:         ws.name,
 	}
 }
 
@@ -108,7 +106,7 @@ func (ws *Workspace) SpecID() WorkspaceSpec {
 }
 
 func (ws *Workspace) SpecName() WorkspaceSpec {
-	return WorkspaceSpec{Name: &ws.name, OrganizationName: &ws.organization.name}
+	return WorkspaceSpec{Name: &ws.name, OrganizationName: &ws.organization}
 }
 
 // Locked determines whether workspace is locked.

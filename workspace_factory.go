@@ -32,7 +32,7 @@ func NewWorkspace(organization *Organization, opts WorkspaceCreateOptions) (*Wor
 		terraformVersion:    DefaultTerraformVersion,
 		speculativeEnabled:  true,
 		lock:                &Unlocked{},
-		organization:        organization,
+		organization:        organization.Name(),
 	}
 	// TODO: ExecutionMode and Operations are mututally exclusive options, this
 	// should be enforced.
@@ -118,4 +118,3 @@ func (o WorkspaceCreateOptions) Valid() error {
 	}
 	return nil
 }
-

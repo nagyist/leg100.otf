@@ -81,7 +81,7 @@ func NewTestVCSProvider(t *testing.T, organization *Organization) *VCSProvider {
 		createdAt:        CurrentTimestamp(),
 		name:             uuid.NewString(),
 		token:            uuid.NewString(),
-		organizationName: organization.Name(),
+		organization: organization.Name(),
 		cloudConfig: CloudConfig{
 			Name:     "fake-cloud",
 			Hostname: "fake-cloud.org",
