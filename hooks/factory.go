@@ -26,10 +26,10 @@ func (f factory) newHook(opts newHookOpts) (*hook, error) {
 	}
 
 	hook := hook{
-		identifier:   opts.identifier,
-		cloud:        opts.cloud,
-		EventHandler: cloudConfig.Cloud,
-		cloudID:      opts.cloudID,
+		identifier:     opts.identifier,
+		cloud:          opts.cloud,
+		HandlerFactory: cloudConfig.Cloud,
+		cloudID:        opts.cloudID,
 	}
 
 	if opts.id != nil {

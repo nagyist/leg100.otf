@@ -7,21 +7,30 @@ import (
 
 	"github.com/google/go-github/v41/github"
 	"github.com/leg100/otf/cloud"
+	"github.com/leg100/otf/events"
 )
 
-// HandleEvent handles incoming events from github
-func HandleEvent(w http.ResponseWriter, r *http.Request, opts cloud.HandleEventOptions) cloud.VCSEvent {
-	event, err := handle(r, opts)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return nil
-	}
-	w.WriteHeader(http.StatusAccepted)
-	return event
+type Handler struct {
+	cloud.HandlerOptions
 }
 
-func handle(r *http.Request, opts cloud.HandleEventOptions) (cloud.VCSEvent, error) {
-	payload, err := github.ValidatePayload(r, []byte(opts.Secret))
+// HandleEvent handles incoming events from github
+func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	event, err := h.handle(w, r)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	w.WriteHeader(http.StatusAccepted)
+	// relay event to subscribers
+	h.Publish(events.Event{
+		Type:    events.EventVCS,
+		Payload: event,
+	})
+}
+
+func (h *Handler) handle(w http.ResponseWriter, r *http.Request) (cloud.VCSEvent, error) {
+	payload, err := github.ValidatePayload(r, []byte(h.Secret))
 	if err != nil {
 		return nil, err
 	}
@@ -52,7 +61,7 @@ func handle(r *http.Request, opts cloud.HandleEventOptions) (cloud.VCSEvent, err
 			}
 
 			return cloud.VCSTagEvent{
-				WebhookID:  opts.WebhookID,
+				WebhookID:  h.WebhookID,
 				Tag:        parts[2],
 				Action:     action,
 				Identifier: event.GetRepo().GetFullName(),
@@ -60,7 +69,7 @@ func handle(r *http.Request, opts cloud.HandleEventOptions) (cloud.VCSEvent, err
 			}, nil
 		case "heads":
 			return cloud.VCSPushEvent{
-				WebhookID:  opts.WebhookID,
+				WebhookID:  h.WebhookID,
 				Branch:     parts[2],
 				Identifier: event.GetRepo().GetFullName(),
 				CommitSHA:  event.GetAfter(),
@@ -84,7 +93,7 @@ func handle(r *http.Request, opts cloud.HandleEventOptions) (cloud.VCSEvent, err
 		}
 
 		return cloud.VCSPullEvent{
-			WebhookID:  opts.WebhookID,
+			WebhookID:  h.WebhookID,
 			Action:     action,
 			Identifier: event.GetRepo().GetFullName(),
 			Branch:     event.PullRequest.Head.GetRef(),

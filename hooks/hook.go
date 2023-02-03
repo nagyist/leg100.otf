@@ -34,7 +34,7 @@ type hook struct {
 	cloud      string // cloud name
 	endpoint   string // otf URL that receives events
 
-	cloud.EventHandler // handles incoming vcs events
+	cloud.HandlerFactory // handles incoming vcs events
 }
 
 // sync synchronises a hook with the cloud

@@ -6,13 +6,14 @@ import (
 	"net/http"
 
 	"github.com/google/uuid"
+	"github.com/leg100/otf/events"
 )
 
 // Cloud is an external provider of various cloud services e.g. identity provider, VCS
 // repositories etc.
 type Cloud interface {
 	NewClient(context.Context, ClientOptions) (Client, error)
-	EventHandler
+	HandlerFactory
 }
 
 type Service interface {
@@ -20,16 +21,16 @@ type Service interface {
 	ListCloudConfigs() []Config
 }
 
-// EventHandler handles incoming events
-type EventHandler interface {
-	// HandleEvent extracts a cloud-specific event from the http request, converting it into a
-	// VCS event. Returns nil if the event is to be ignored.
-	HandleEvent(w http.ResponseWriter, r *http.Request, opts HandleEventOptions) VCSEvent
+// HandlerFactory makes VCS event handlers
+type HandlerFactory interface {
+	NewHandler(HandlerOptions) http.Handler
 }
 
-type HandleEventOptions struct {
+type HandlerOptions struct {
 	Secret    string
 	WebhookID uuid.UUID
+
+	events.PubSubService
 }
 
 // Repo is a VCS repository belonging to a cloud

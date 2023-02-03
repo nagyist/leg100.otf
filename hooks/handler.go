@@ -15,14 +15,12 @@ import (
 type handler struct {
 	logr.Logger
 
-	events chan<- cloud.VCSEvent
 	db
 }
 
-func NewHandler(logger logr.Logger, events chan<- cloud.VCSEvent, app otf.Application) *handler {
+func NewHandler(logger logr.Logger, app otf.Application) *handler {
 	return &handler{
 		Logger: logger,
-		events: events,
 		db:     newPGDB(app.DB(), newFactory(app, app)),
 	}
 }
@@ -44,8 +42,7 @@ func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 	h.V(1).Info("received vcs event", "id", opts.ID, "repo", hook.identifier, "cloud", hook.cloud)
 
-	event := hook.HandleEvent(w, r, cloud.HandleEventOptions{Secret: hook.secret, WebhookID: hook.id})
-	if event != nil {
-		h.events <- event
-	}
+	// relay event onto cloud-specific handler
+	relay := hook.NewHandler(cloud.HandlerOptions{Secret: hook.secret, WebhookID: hook.id})
+	relay.ServeHTTP(w, r)
 }
