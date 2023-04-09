@@ -1,22 +1,65 @@
-package auth
+package team
 
 import (
 	"context"
-	"errors"
 
+	"github.com/go-logr/logr"
+	"github.com/gorilla/mux"
+	"github.com/leg100/otf"
+	"github.com/leg100/otf/organization"
 	"github.com/leg100/otf/rbac"
 )
 
-var ErrRemovingOwnersTeamNotPermitted = errors.New("the owners team cannot be deleted")
+type (
+	// Aliases to disambiguate service names when embedded together.
 
-type TeamService interface {
-	CreateTeam(ctx context.Context, opts CreateTeamOptions) (*Team, error)
-	GetTeam(ctx context.Context, organization, team string) (*Team, error)
-	GetTeamByID(ctx context.Context, teamID string) (*Team, error)
-	ListTeams(ctx context.Context, organization string) ([]*Team, error)
-	ListTeamMembers(ctx context.Context, teamID string) ([]*User, error)
-	UpdateTeam(ctx context.Context, teamID string, opts UpdateTeamOptions) (*Team, error)
-	DeleteTeam(ctx context.Context, teamID string) error
+	OrganizationService organization.Service
+	TeamService         interface {
+		CreateTeam(ctx context.Context, opts CreateTeamOptions) (*Team, error)
+		GetTeam(ctx context.Context, organization, team string) (*Team, error)
+		GetTeamByID(ctx context.Context, teamID string) (*Team, error)
+		ListTeams(ctx context.Context, organization string) ([]*Team, error)
+		UpdateTeam(ctx context.Context, teamID string, opts UpdateTeamOptions) (*Team, error)
+		DeleteTeam(ctx context.Context, teamID string) error
+	}
+
+	service struct {
+		logr.Logger
+
+		site         otf.Authorizer // authorizes site access
+		organization otf.Authorizer // authorizes org access
+
+		api *api
+		db  *pgdb
+		web *webHandlers
+	}
+
+	Options struct {
+		otf.DB
+		otf.Renderer
+		otf.HostnameService
+		logr.Logger
+	}
+)
+
+func NewService(opts Options) *service {
+	svc := service{
+		Logger:       opts.Logger,
+		organization: &organization.Authorizer{Logger: opts.Logger},
+		site:         &otf.SiteAuthorizer{Logger: opts.Logger},
+		db:           newDB(opts.DB, opts.Logger),
+	}
+	svc.api = &api{svc: &svc}
+	svc.web = &webHandlers{
+		Renderer: opts.Renderer,
+		svc:      &svc,
+	}
+	return &svc
+}
+
+func (a *service) AddHandlers(r *mux.Router) {
+	a.api.addHandlers(r)
+	a.web.addHandlers(r)
 }
 
 // CreateTeam creates a team. If Tx in opts is non-nil then the team is created

@@ -1,4 +1,4 @@
-package auth
+package team
 
 import (
 	"net/http/httptest"

@@ -1,12 +1,13 @@
-package auth
+package team
 
 import (
+	"errors"
 	"time"
 
 	"github.com/leg100/otf"
 )
 
-var GuestTeam = Team{ID: "team-guest", Name: "guest"}
+var ErrRemovingOwnersTeamNotPermitted = errors.New("the owners team cannot be deleted")
 
 type (
 	// Team is a group of users sharing a level of authorization.

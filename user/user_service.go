@@ -1,4 +1,4 @@
-package auth
+package user
 
 import (
 	"context"
@@ -19,6 +19,7 @@ type (
 		AddTeamMembership(ctx context.Context, opts TeamMembershipOptions) error
 		RemoveTeamMembership(ctx context.Context, opts TeamMembershipOptions) error
 		SetSiteAdmins(ctx context.Context, usernames ...string) error
+		ListTeamMembers(ctx context.Context, teamID string) ([]*User, error)
 	}
 	TeamMembershipOptions struct {
 		Username string `schema:"username,required"`
