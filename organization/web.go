@@ -8,6 +8,7 @@ import (
 	"github.com/leg100/otf/http/decode"
 	"github.com/leg100/otf/http/html"
 	"github.com/leg100/otf/http/html/paths"
+	"github.com/leg100/otf/rbac"
 )
 
 // web is the web application for organizations
@@ -43,9 +44,11 @@ func (a *web) list(w http.ResponseWriter, r *http.Request) {
 	a.Render("organization_list.tmpl", w, r, struct {
 		*OrganizationList
 		OrganizationListOptions
+		DeleteOrganizationAction rbac.Action
 	}{
-		OrganizationList:        organizations,
-		OrganizationListOptions: opts,
+		OrganizationList:         organizations,
+		OrganizationListOptions:  opts,
+		DeleteOrganizationAction: rbac.DeleteOrganizationAction,
 	})
 }
 

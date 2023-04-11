@@ -4,6 +4,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/leg100/otf"
 	"github.com/leg100/otf/http/html"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -22,6 +23,7 @@ func TestWeb(t *testing.T) {
 
 		t.Run("first page", func(t *testing.T) {
 			r := httptest.NewRequest("GET", "/?page[number]=1&page[size]=2", nil)
+			r = r.WithContext(otf.AddSubjectToContext(r.Context(), &otf.Superuser{}))
 			w := httptest.NewRecorder()
 			svc.list(w, r)
 			assert.Equal(t, 200, w.Code)
@@ -31,6 +33,7 @@ func TestWeb(t *testing.T) {
 
 		t.Run("second page", func(t *testing.T) {
 			r := httptest.NewRequest("GET", "/?page[number]=2&page[size]=2", nil)
+			r = r.WithContext(otf.AddSubjectToContext(r.Context(), &otf.Superuser{}))
 			w := httptest.NewRecorder()
 			svc.list(w, r)
 			assert.Equal(t, 200, w.Code)
@@ -40,6 +43,7 @@ func TestWeb(t *testing.T) {
 
 		t.Run("last page", func(t *testing.T) {
 			r := httptest.NewRequest("GET", "/?page[number]=3&page[size]=2", nil)
+			r = r.WithContext(otf.AddSubjectToContext(r.Context(), &otf.Superuser{}))
 			w := httptest.NewRecorder()
 			svc.list(w, r)
 			assert.Equal(t, 200, w.Code)
