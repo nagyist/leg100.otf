@@ -8,7 +8,7 @@
       
       
       
-        <link rel="canonical" href="https://docs.otf.ninja/v0.0.39/">
+        <link rel="canonical" href="https://docs.otf.ninja/v0.0.40/">
       
       
       
@@ -337,8 +337,6 @@
       
         
           
-            
-          
         
           
         
@@ -348,16 +346,10 @@
         
       
       
-        
-        
-        <div class="md-nav__link md-nav__link--index ">
-          <a href="auth/providers/">Identity Providers</a>
-          
-            <label for="__nav_4_1">
-              <span class="md-nav__icon md-icon"></span>
-            </label>
-          
-        </div>
+        <label class="md-nav__link" for="__nav_4_1" id="__nav_4_1_label" tabindex="0">
+          Identity Providers
+          <span class="md-nav__icon md-icon"></span>
+        </label>
       
       <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_1_label" aria-expanded="false">
         <label class="md-nav__title" for="__nav_4_1">
@@ -365,8 +357,6 @@
           Identity Providers
         </label>
         <ul class="md-nav__list" data-md-scrollfix>
-          
-            
           
             
               
@@ -390,6 +380,20 @@
     <li class="md-nav__item">
       <a href="auth/providers/gitlab/" class="md-nav__link">
         Gitlab
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="auth/providers/oidc/" class="md-nav__link">
+        OIDC
       </a>
     </li>
   
@@ -480,6 +484,8 @@
         
           
         
+          
+        
       
       
         <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="0">
@@ -558,6 +564,20 @@
     <li class="md-nav__item">
       <a href="cli/" class="md-nav__link">
         CLI
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="notifications/" class="md-nav__link">
+        Notifications
       </a>
     </li>
   
@@ -750,7 +770,7 @@
 <li>Remote execution mode: plans and applies run on servers</li>
 <li>Agent execution mode: plans and applies run on agents</li>
 <li>Remote state backend: state stored in PostgreSQL</li>
-<li>SSO: sign in using an identity provider, e.g. Github, Gitlab etc.</li>
+<li>SSO: sign in using an identity provider via OIDC, OAuth, etc.</li>
 <li>Module registry (provider registry coming soon)</li>
 <li>RBAC: control team access to workspaces</li>
 <li>VCS integration: trigger runs and publish modules from git commits</li>
