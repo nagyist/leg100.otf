@@ -28,12 +28,22 @@ type (
 		CreateRun(ctx context.Context, workspaceID string, opts RunCreateOptions) (*Run, error)
 		GetRun(ctx context.Context, id string) (*Run, error)
 		ListRuns(ctx context.Context, opts RunListOptions) (*RunList, error)
+
 		EnqueuePlan(ctx context.Context, runID string) (*Run, error)
 		// StartPhase starts a run phase.
 		StartPhase(ctx context.Context, runID string, phase internal.PhaseType, _ PhaseStartOptions) (*Run, error)
 		// FinishPhase finishes a phase. Creates a report of changes before updating the status of
 		// the run.
 		FinishPhase(ctx context.Context, runID string, phase internal.PhaseType, opts PhaseFinishOptions) (*Run, error)
+		// Apply enqueues an Apply for the run.
+		Apply(ctx context.Context, runID string) error
+
+		// Cancel a run. If a run is in progress then a cancelation signal will be
+		// sent out.
+		Cancel(ctx context.Context, runID string) (*Run, error)
+		// ForceCancelRun forcefully cancels a run.
+		ForceCancelRun(ctx context.Context, runID string) error
+
 		// GetPlanFile returns the plan file for the run.
 		GetPlanFile(ctx context.Context, runID string, format PlanFormat) ([]byte, error)
 		// UploadPlanFile persists a run's plan file. The plan format should be either
@@ -46,11 +56,6 @@ type (
 		// returning a stream object with a Close() method. The calling code would
 		// call Watch(), and then defer a Close(), which is more readable IMO.
 		Watch(ctx context.Context, opts WatchOptions) (<-chan pubsub.Event, error)
-		// Cancel a run. If a run is in progress then a cancelation signal will be
-		// sent out.
-		Cancel(ctx context.Context, runID string) (*Run, error)
-		// Apply enqueues an Apply for the run.
-		Apply(ctx context.Context, runID string) error
 		// Delete a run.
 		Delete(ctx context.Context, runID string) error
 
@@ -60,8 +65,6 @@ type (
 
 		// DiscardRun discards a run. Run must be in the planned state.
 		DiscardRun(ctx context.Context, runID string) error
-		// ForceCancelRun forcefully cancels a run.
-		ForceCancelRun(ctx context.Context, runID string) error
 		// createReport creates a report of changes for the phase.
 		createReport(ctx context.Context, runID string, phase internal.PhaseType) (ResourceReport, error)
 		createPlanReport(ctx context.Context, runID string) (ResourceReport, error)
