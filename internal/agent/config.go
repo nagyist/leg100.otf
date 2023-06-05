@@ -18,6 +18,7 @@ type (
 	// ExternalConfig is configuration for an external agent
 	ExternalConfig struct {
 		HTTPConfig http.Config
+		Name       *string // Optional user-allocated name for agent
 
 		Config
 	}

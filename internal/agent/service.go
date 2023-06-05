@@ -3,9 +3,11 @@ package agent
 import "context"
 
 const (
-	Busy   Status = "busy"
-	Idle   Status = "idle"
-	Exited Status = "exited"
+	Busy    Status = "busy"
+	Idle    Status = "idle"
+	Exited  Status = "exited"
+	Errored Status = "errored"
+	Unknown Status = "unknown"
 )
 
 type (
@@ -13,7 +15,7 @@ type (
 	Service interface {
 		// Register an agent and return unique ID
 		Register(ctx context.Context, opts RegisterOptions) (string, error)
-		// StatusUpdate updates the status of an agent with the given ID.
+		// UpdateStatus updates the status of an agent with the given ID.
 		UpdateStatus(ctx context.Context, id string, status Status) error
 	}
 
@@ -22,4 +24,14 @@ type (
 	}
 
 	Status string
+
+	service struct{}
 )
+
+func (s *service) Register(ctx context.Context, opts RegisterOptions) (string, error) {
+	return "", nil
+}
+
+func (s *service) UpdateStatus(ctx context.Context, id string, status Status) error {
+	return nil
+}
