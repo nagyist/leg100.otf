@@ -2,7 +2,6 @@ package notifications
 
 import (
 	"context"
-	"reflect"
 
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/logr"
@@ -20,8 +19,6 @@ type (
 		GetNotificationConfiguration(ctx context.Context, id string) (*Config, error)
 		ListNotificationConfigurations(ctx context.Context, workspaceID string) ([]*Config, error)
 		DeleteNotificationConfiguration(ctx context.Context, id string) error
-
-		StartNotifier(ctx context.Context) error
 	}
 
 	service struct {
@@ -54,18 +51,8 @@ func NewService(opts Options) *service {
 		WorkspaceService: opts.WorkspaceService,
 	}
 	// Register with broker so that it can relay events
-	opts.Register(reflect.TypeOf(&Config{}), "notification_configurations", svc.db)
+	opts.Register("notification_configurations", svc.db)
 	return &svc
-}
-
-func (s *service) StartNotifier(ctx context.Context) error {
-	return start(ctx, notifierOptions{
-		Logger:           s.Logger,
-		Subscriber:       s.PubSubService,
-		WorkspaceService: s.WorkspaceService,
-		HostnameService:  s.HostnameService,
-		db:               s.db,
-	})
 }
 
 func (s *service) CreateNotificationConfiguration(ctx context.Context, workspaceID string, opts CreateConfigOptions) (*Config, error) {

@@ -123,17 +123,29 @@ func screenshot(t *testing.T, docPath ...string) chromedp.ActionFunc {
 		if err != nil {
 			return err
 		}
-		// optionally save image in the docs directory too
-		if len(docPath) > 0 {
-			fname := path.Join("..", "..", "docs", "images", docPath[0]+".png")
-			err = os.MkdirAll(filepath.Dir(fname), 0o755)
-			if err != nil {
-				return err
-			}
-			err = os.WriteFile(fname, image, 0o644)
-			if err != nil {
-				return err
-			}
+
+		//
+		// additionally, save the screenshot image in the docs directory too,
+		// but only if a path is specified AND the relevant env var is
+		// specified.
+		//
+		if len(docPath) == 0 {
+			return nil
+		}
+		if docScreenshots, ok := os.LookupEnv("OTF_DOC_SCREENSHOTS"); !ok {
+			return nil
+		} else if docScreenshots != "true" {
+			return nil
+		}
+
+		fname = path.Join("..", "..", "docs", "images", docPath[0]+".png")
+		err = os.MkdirAll(filepath.Dir(fname), 0o755)
+		if err != nil {
+			return err
+		}
+		err = os.WriteFile(fname, image, 0o644)
+		if err != nil {
+			return err
 		}
 		return nil
 	}
@@ -213,7 +225,7 @@ func startRunTasks(t *testing.T, hostname, organization, workspaceName, strategy
 		chromedp.WaitReady(`#plan-status.phase-status-finished`),
 		screenshot(t),
 		// wait for run to enter planned state
-		chromedp.WaitReady(`//*[@id='run-status']//*[normalize-space(text())='planned']`, chromedp.BySearch),
+		chromedp.WaitReady(`//*[@class='status status-planned']`, chromedp.BySearch),
 		screenshot(t),
 		// run widget should show plan summary
 		matchRegex(t, `//div[@class='item']//div[@class='resource-summary']`, `\+[0-9]+ \~[0-9]+ \-[0-9]+`),
@@ -228,7 +240,7 @@ func startRunTasks(t *testing.T, hostname, organization, workspaceName, strategy
 		chromedp.WaitReady(`//*[@id='tailed-apply-logs']//text()[contains(.,'Initializing the backend')]`, chromedp.BySearch),
 		chromedp.WaitReady(`#apply-status.phase-status-finished`),
 		// confirm run ends in applied state
-		chromedp.WaitReady(`//*[@id='run-status']//*[normalize-space(text())='applied']`, chromedp.BySearch),
+		chromedp.WaitReady(`//*[@class='status status-applied']`, chromedp.BySearch),
 		// run widget should show apply summary
 		matchRegex(t, `//div[@class='item']//div[@class='resource-summary']`, `\+[0-9]+ \~[0-9]+ \-[0-9]+`),
 		screenshot(t),

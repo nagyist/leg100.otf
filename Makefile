@@ -6,9 +6,9 @@ IMAGE_TAG ?= $(VERSION)-$(RANDOM_SUFFIX)
 GOOSE_DBSTRING=postgres:///otf
 LD_FLAGS = " \
     -s -w \
-	-X 'github.com/leg100/otf.Version=$(VERSION)' \
-	-X 'github.com/leg100/otf.Commit=$(GIT_COMMIT)'	\
-	-X 'github.com/leg100/otf.Built=$(shell date +%s)'	\
+	-X 'github.com/leg100/otf/internal.Version=$(VERSION)' \
+	-X 'github.com/leg100/otf/internal.Commit=$(GIT_COMMIT)'	\
+	-X 'github.com/leg100/otf/internal.Built=$(shell date +%s)'	\
 	" \
 
 # Get the currently used golang install path (in GOPATH/bin, unless GOBIN is set)
@@ -53,7 +53,7 @@ install:
 install-latest-release:
 	{ \
 	set -ex ;\
-	ZIP_FILE=$$(tempfile --prefix=otf --suffix=.zip) ;\
+	ZIP_FILE=$$(mktemp) ;\
 	RELEASE_URL=$$(curl -s https://api.github.com/repos/leg100/otf/releases/latest | \
 		jq -r '.assets[] | select(.name | test("otfd_.*_linux_amd64.zip$$")) | .browser_download_url') ;\
 	curl -Lo $$ZIP_FILE $$RELEASE_URL ;\
@@ -167,6 +167,10 @@ migrate-status: install-goose
 .PHONY: serve-docs
 serve-docs:
 	mkdocs serve -a localhost:9999
+
+.PHONY: doc-screenshots
+doc-screenshots: # update documentation screenshots
+	OTF_DOC_SCREENSHOTS=true go test ./internal/integration/... -count 1
 
 # Create tunnel between local server and cloudflare - useful for testing
 # webhooks, e.g. a github webhook sending events to local server.

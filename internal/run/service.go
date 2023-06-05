@@ -3,7 +3,6 @@ package run
 import (
 	"context"
 	"fmt"
-	"reflect"
 
 	"github.com/go-logr/logr"
 	"github.com/gorilla/mux"
@@ -129,10 +128,10 @@ func NewService(opts Options) *service {
 	}
 
 	svc.web = &webHandlers{
-		Logger:           opts.Logger,
 		Renderer:         opts.Renderer,
 		WorkspaceService: opts.WorkspaceService,
 		logsdb:           db,
+		logger:           opts.Logger,
 		svc:              &svc,
 		starter: &starter{
 			ConfigurationVersionService: opts.ConfigurationVersionService,
@@ -143,7 +142,7 @@ func NewService(opts Options) *service {
 	}
 
 	// Register with broker so that it can relay run events
-	opts.Register(reflect.TypeOf(&Run{}), "runs", &svc)
+	opts.Register("runs", &svc)
 
 	return &svc
 }
@@ -193,7 +192,10 @@ func (s *service) GetRun(ctx context.Context, runID string) (*Run, error) {
 }
 
 // GetByID implements pubsub.Getter
-func (s *service) GetByID(ctx context.Context, runID string) (any, error) {
+func (s *service) GetByID(ctx context.Context, runID string, action pubsub.DBAction) (any, error) {
+	if action == pubsub.DeleteDBAction {
+		return &Run{ID: runID}, nil
+	}
 	return s.db.GetRun(ctx, runID)
 }
 
@@ -500,7 +502,7 @@ func (s *service) GetPlanFile(ctx context.Context, runID string, format PlanForm
 	}
 	// Cache plan before returning
 	if err := s.cache.Set(planFileCacheKey(format, runID), file); err != nil {
-		return nil, fmt.Errorf("caching plan: %w", err)
+		s.Error(err, "caching plan file")
 	}
 	return file, nil
 }
@@ -521,7 +523,7 @@ func (s *service) UploadPlanFile(ctx context.Context, runID string, plan []byte,
 	s.V(1).Info("uploaded plan file", "id", runID, "format", format, "subject", subject)
 
 	if err := s.cache.Set(planFileCacheKey(format, runID), plan); err != nil {
-		return fmt.Errorf("caching plan: %w", err)
+		s.Error(err, "caching plan file")
 	}
 
 	return nil

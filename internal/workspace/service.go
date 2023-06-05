@@ -3,7 +3,6 @@ package workspace
 import (
 	"context"
 	"errors"
-	"reflect"
 
 	"github.com/go-logr/logr"
 	"github.com/google/uuid"
@@ -92,7 +91,7 @@ func NewService(opts Options) *service {
 		svc:                &svc,
 	}
 	// Register with broker so that it can relay workspace events
-	opts.Register(reflect.TypeOf(&Workspace{}), "workspaces", &svc)
+	opts.Register("workspaces", &svc)
 	return &svc
 }
 
@@ -152,7 +151,10 @@ func (s *service) CreateWorkspace(ctx context.Context, opts CreateOptions) (*Wor
 }
 
 // GetByID implements pubsub.Getter
-func (s *service) GetByID(ctx context.Context, workspaceID string) (any, error) {
+func (s *service) GetByID(ctx context.Context, workspaceID string, action pubsub.DBAction) (any, error) {
+	if action == pubsub.DeleteDBAction {
+		return &Workspace{ID: workspaceID}, nil
+	}
 	return s.db.get(ctx, workspaceID)
 }
 
@@ -319,8 +321,7 @@ func (s *service) disconnect(ctx context.Context, workspaceID string) error {
 		ConnectionType: repo.WorkspaceConnection,
 		ResourceID:     workspaceID,
 	})
-	// ignore warnings; the repo is still disconnected successfully
-	if err != nil && !errors.Is(err, internal.ErrWarning) {
+	if err != nil {
 		s.Error(err, "disconnecting workspace", "workspace", workspaceID, "subject", subject)
 		return err
 	}
