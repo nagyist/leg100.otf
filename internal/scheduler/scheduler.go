@@ -54,7 +54,7 @@ func NewScheduler(opts Options) *scheduler {
 	}
 }
 
-// reinitialize retrieves workspaces and runs from the DB and listens to events,
+// Start retrieves workspaces and runs from the DB and listens to events,
 // creating/deleting workspace queues accordingly and forwarding events to
 // queues for scheduling.
 func (s *scheduler) Start(ctx context.Context) error {

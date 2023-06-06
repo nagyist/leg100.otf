@@ -570,3 +570,19 @@ func (s *service) createApplyReport(ctx context.Context, runID string) (Resource
 	}
 	return report, nil
 }
+
+func ListAll(ctx context.Context, svc Service, opts RunListOptions) (runs []*Run, err error) {
+	opts.ListOptions = internal.ListOptions{PageSize: internal.MaxPageSize}
+	for {
+		page, err := svc.ListRuns(ctx, opts)
+		if err != nil {
+			return nil, err
+		}
+		runs = append(runs, page.Items...)
+		if page.NextPage() == nil {
+			break
+		}
+		opts.PageNumber = *page.NextPage()
+	}
+	return runs, nil
+}
