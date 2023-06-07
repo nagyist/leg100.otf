@@ -179,6 +179,34 @@ type Querier interface {
 	// InsertIngressAttributesScan scans the result of an executed InsertIngressAttributesBatch query.
 	InsertIngressAttributesScan(results pgx.BatchResults) (pgconn.CommandTag, error)
 
+	InsertJob(ctx context.Context, params InsertJobParams) (pgconn.CommandTag, error)
+	// InsertJobBatch enqueues a InsertJob query into batch to be executed
+	// later by the batch.
+	InsertJobBatch(batch genericBatch, params InsertJobParams)
+	// InsertJobScan scans the result of an executed InsertJobBatch query.
+	InsertJobScan(results pgx.BatchResults) (pgconn.CommandTag, error)
+
+	AssignJob(ctx context.Context, params AssignJobParams) (pgtype.Text, error)
+	// AssignJobBatch enqueues a AssignJob query into batch to be executed
+	// later by the batch.
+	AssignJobBatch(batch genericBatch, params AssignJobParams)
+	// AssignJobScan scans the result of an executed AssignJobBatch query.
+	AssignJobScan(results pgx.BatchResults) (pgtype.Text, error)
+
+	UpdateJobStatus(ctx context.Context, status pgtype.Text, jobID pgtype.Text) (pgtype.Text, error)
+	// UpdateJobStatusBatch enqueues a UpdateJobStatus query into batch to be executed
+	// later by the batch.
+	UpdateJobStatusBatch(batch genericBatch, status pgtype.Text, jobID pgtype.Text)
+	// UpdateJobStatusScan scans the result of an executed UpdateJobStatusBatch query.
+	UpdateJobStatusScan(results pgx.BatchResults) (pgtype.Text, error)
+
+	FindJobsByStatus(ctx context.Context, status pgtype.Text) ([]FindJobsByStatusRow, error)
+	// FindJobsByStatusBatch enqueues a FindJobsByStatus query into batch to be executed
+	// later by the batch.
+	FindJobsByStatusBatch(batch genericBatch, status pgtype.Text)
+	// FindJobsByStatusScan scans the result of an executed FindJobsByStatusBatch query.
+	FindJobsByStatusScan(results pgx.BatchResults) ([]FindJobsByStatusRow, error)
+
 	InsertModule(ctx context.Context, params InsertModuleParams) (pgconn.CommandTag, error)
 	// InsertModuleBatch enqueues a InsertModule query into batch to be executed
 	// later by the batch.
@@ -1253,6 +1281,18 @@ func PrepareAllQueries(ctx context.Context, p preparer) error {
 	}
 	if _, err := p.Prepare(ctx, insertIngressAttributesSQL, insertIngressAttributesSQL); err != nil {
 		return fmt.Errorf("prepare query 'InsertIngressAttributes': %w", err)
+	}
+	if _, err := p.Prepare(ctx, insertJobSQL, insertJobSQL); err != nil {
+		return fmt.Errorf("prepare query 'InsertJob': %w", err)
+	}
+	if _, err := p.Prepare(ctx, assignJobSQL, assignJobSQL); err != nil {
+		return fmt.Errorf("prepare query 'AssignJob': %w", err)
+	}
+	if _, err := p.Prepare(ctx, updateJobStatusSQL, updateJobStatusSQL); err != nil {
+		return fmt.Errorf("prepare query 'UpdateJobStatus': %w", err)
+	}
+	if _, err := p.Prepare(ctx, findJobsByStatusSQL, findJobsByStatusSQL); err != nil {
+		return fmt.Errorf("prepare query 'FindJobsByStatus': %w", err)
 	}
 	if _, err := p.Prepare(ctx, insertModuleSQL, insertModuleSQL); err != nil {
 		return fmt.Errorf("prepare query 'InsertModule': %w", err)

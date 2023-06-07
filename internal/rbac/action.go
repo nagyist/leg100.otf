@@ -22,6 +22,10 @@ const (
 	ListAgentTokensAction
 	DeleteAgentTokenAction
 
+	RegisterAgentAction
+	UpdateAgentStatusAction
+	ListAgentsAction
+
 	CreateRunTokenAction
 
 	CreateModuleAction

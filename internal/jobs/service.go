@@ -8,11 +8,11 @@ import (
 )
 
 const (
-	Created   Status = "created"
-	Assigned  Status = "assigned"
-	Running   Status = "running"
-	Completed Status = "completed"
-	Errored   Status = "errored"
+	Unassigned Status = "unassigned"
+	Assigned   Status = "assigned"
+	Running    Status = "running"
+	Completed  Status = "completed"
+	Errored    Status = "errored"
 )
 
 type (
@@ -25,6 +25,7 @@ type (
 		AssignJob(context.Context, AssignJobOptions) error
 		GetJob(context.Context, GetJobOptions) (*Job, error)
 		UpdateJobStatus(context.Context, Status) error
+		ListJobs(context.Context, ListJobsOptions) ([]*Job, error)
 	}
 
 	CreateJobOptions struct {
@@ -36,6 +37,10 @@ type (
 		RunID   string
 		Phase   internal.PhaseType
 		AgentID string
+	}
+
+	ListJobsOptions struct {
+		Status Status // filter jobs by status
 	}
 
 	GetJobOptions struct {
