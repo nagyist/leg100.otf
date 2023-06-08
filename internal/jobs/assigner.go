@@ -25,28 +25,29 @@ type (
 )
 
 func (s *Assigner) Start(ctx context.Context) error {
+	// ensure data structures are allocated/emptied whenever assigner is
+	// started/re-started
+	s.queue = make([]*Job, 0)
+	s.active = make(map[string]*agentservice.Agent)
+
 	// Unsubscribe whenever exiting this routine.
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
-
 	// subscribe to job and agent events
 	sub, err := s.Subscribe(ctx, "job-assigner-")
 	if err != nil {
 		return err
 	}
-
 	// retrieve existing agents
-	existingAgents, err := s.ListAgents(ctx, agentservice.ListAgentsOptions{})
+	existingAgents, err := s.ListAgents(ctx)
 	if err != nil {
 		return err
 	}
-
 	// retrieve existing unassigned jobs
 	existingJobs, err := s.ListJobs(ctx, ListJobsOptions{Status: Unassigned})
 	if err != nil {
 		return err
 	}
-
 	// spool existing unassigned jobs in reverse order; ListJobs returns jobs newest first,
 	// whereas we want oldest first.
 	for i := len(existingJobs) - 1; i >= 0; i-- {
@@ -73,7 +74,6 @@ func (s *Assigner) Start(ctx context.Context) error {
 			}
 		}
 	}
-
 	return nil
 }
 

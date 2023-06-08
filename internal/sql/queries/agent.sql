@@ -28,6 +28,11 @@ WHERE agent_id = pggen.arg('agent_id')
 RETURNING status
 ;
 
+-- name: FindAgents :many
+SELECT *
+FROM agents
+;
+
 -- name: FindAgentsByOrganization :many
 SELECT *
 FROM agents

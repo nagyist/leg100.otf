@@ -31,6 +31,13 @@ type Querier interface {
 	// UpdateAgentStatusScan scans the result of an executed UpdateAgentStatusBatch query.
 	UpdateAgentStatusScan(results pgx.BatchResults) (pgtype.Text, error)
 
+	FindAgents(ctx context.Context) ([]FindAgentsRow, error)
+	// FindAgentsBatch enqueues a FindAgents query into batch to be executed
+	// later by the batch.
+	FindAgentsBatch(batch genericBatch)
+	// FindAgentsScan scans the result of an executed FindAgentsBatch query.
+	FindAgentsScan(results pgx.BatchResults) ([]FindAgentsRow, error)
+
 	FindAgentsByOrganization(ctx context.Context, organizationName pgtype.Text) ([]FindAgentsByOrganizationRow, error)
 	// FindAgentsByOrganizationBatch enqueues a FindAgentsByOrganization query into batch to be executed
 	// later by the batch.
@@ -200,12 +207,19 @@ type Querier interface {
 	// UpdateJobStatusScan scans the result of an executed UpdateJobStatusBatch query.
 	UpdateJobStatusScan(results pgx.BatchResults) (pgtype.Text, error)
 
-	FindJobsByStatus(ctx context.Context, status pgtype.Text) ([]FindJobsByStatusRow, error)
-	// FindJobsByStatusBatch enqueues a FindJobsByStatus query into batch to be executed
+	FindAssignedJobByAgentID(ctx context.Context, agentID pgtype.Text) (FindAssignedJobByAgentIDRow, error)
+	// FindAssignedJobByAgentIDBatch enqueues a FindAssignedJobByAgentID query into batch to be executed
 	// later by the batch.
-	FindJobsByStatusBatch(batch genericBatch, status pgtype.Text)
-	// FindJobsByStatusScan scans the result of an executed FindJobsByStatusBatch query.
-	FindJobsByStatusScan(results pgx.BatchResults) ([]FindJobsByStatusRow, error)
+	FindAssignedJobByAgentIDBatch(batch genericBatch, agentID pgtype.Text)
+	// FindAssignedJobByAgentIDScan scans the result of an executed FindAssignedJobByAgentIDBatch query.
+	FindAssignedJobByAgentIDScan(results pgx.BatchResults) (FindAssignedJobByAgentIDRow, error)
+
+	FindJobByRunIDAndPhase(ctx context.Context, runID pgtype.Text, phase pgtype.Text) (FindJobByRunIDAndPhaseRow, error)
+	// FindJobByRunIDAndPhaseBatch enqueues a FindJobByRunIDAndPhase query into batch to be executed
+	// later by the batch.
+	FindJobByRunIDAndPhaseBatch(batch genericBatch, runID pgtype.Text, phase pgtype.Text)
+	// FindJobByRunIDAndPhaseScan scans the result of an executed FindJobByRunIDAndPhaseBatch query.
+	FindJobByRunIDAndPhaseScan(results pgx.BatchResults) (FindJobByRunIDAndPhaseRow, error)
 
 	InsertModule(ctx context.Context, params InsertModuleParams) (pgconn.CommandTag, error)
 	// InsertModuleBatch enqueues a InsertModule query into batch to be executed
@@ -1222,6 +1236,9 @@ func PrepareAllQueries(ctx context.Context, p preparer) error {
 	if _, err := p.Prepare(ctx, updateAgentStatusSQL, updateAgentStatusSQL); err != nil {
 		return fmt.Errorf("prepare query 'UpdateAgentStatus': %w", err)
 	}
+	if _, err := p.Prepare(ctx, findAgentsSQL, findAgentsSQL); err != nil {
+		return fmt.Errorf("prepare query 'FindAgents': %w", err)
+	}
 	if _, err := p.Prepare(ctx, findAgentsByOrganizationSQL, findAgentsByOrganizationSQL); err != nil {
 		return fmt.Errorf("prepare query 'FindAgentsByOrganization': %w", err)
 	}
@@ -1291,8 +1308,11 @@ func PrepareAllQueries(ctx context.Context, p preparer) error {
 	if _, err := p.Prepare(ctx, updateJobStatusSQL, updateJobStatusSQL); err != nil {
 		return fmt.Errorf("prepare query 'UpdateJobStatus': %w", err)
 	}
-	if _, err := p.Prepare(ctx, findJobsByStatusSQL, findJobsByStatusSQL); err != nil {
-		return fmt.Errorf("prepare query 'FindJobsByStatus': %w", err)
+	if _, err := p.Prepare(ctx, findAssignedJobByAgentIDSQL, findAssignedJobByAgentIDSQL); err != nil {
+		return fmt.Errorf("prepare query 'FindAssignedJobByAgentID': %w", err)
+	}
+	if _, err := p.Prepare(ctx, findJobByRunIDAndPhaseSQL, findJobByRunIDAndPhaseSQL); err != nil {
+		return fmt.Errorf("prepare query 'FindJobByRunIDAndPhase': %w", err)
 	}
 	if _, err := p.Prepare(ctx, insertModuleSQL, insertModuleSQL); err != nil {
 		return fmt.Errorf("prepare query 'InsertModule': %w", err)
@@ -2189,6 +2209,69 @@ func (q *DBQuerier) UpdateAgentStatusScan(results pgx.BatchResults) (pgtype.Text
 		return item, fmt.Errorf("scan UpdateAgentStatusBatch row: %w", err)
 	}
 	return item, nil
+}
+
+const findAgentsSQL = `SELECT *
+FROM agents
+;`
+
+type FindAgentsRow struct {
+	AgentID          pgtype.Text        `json:"agent_id"`
+	Status           pgtype.Text        `json:"status"`
+	IpAddress        pgtype.Text        `json:"ip_address"`
+	Version          pgtype.Text        `json:"version"`
+	Name             pgtype.Text        `json:"name"`
+	External         bool               `json:"external"`
+	LastSeen         pgtype.Timestamptz `json:"last_seen"`
+	OrganizationName pgtype.Text        `json:"organization_name"`
+}
+
+// FindAgents implements Querier.FindAgents.
+func (q *DBQuerier) FindAgents(ctx context.Context) ([]FindAgentsRow, error) {
+	ctx = context.WithValue(ctx, "pggen_query_name", "FindAgents")
+	rows, err := q.conn.Query(ctx, findAgentsSQL)
+	if err != nil {
+		return nil, fmt.Errorf("query FindAgents: %w", err)
+	}
+	defer rows.Close()
+	items := []FindAgentsRow{}
+	for rows.Next() {
+		var item FindAgentsRow
+		if err := rows.Scan(&item.AgentID, &item.Status, &item.IpAddress, &item.Version, &item.Name, &item.External, &item.LastSeen, &item.OrganizationName); err != nil {
+			return nil, fmt.Errorf("scan FindAgents row: %w", err)
+		}
+		items = append(items, item)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("close FindAgents rows: %w", err)
+	}
+	return items, err
+}
+
+// FindAgentsBatch implements Querier.FindAgentsBatch.
+func (q *DBQuerier) FindAgentsBatch(batch genericBatch) {
+	batch.Queue(findAgentsSQL)
+}
+
+// FindAgentsScan implements Querier.FindAgentsScan.
+func (q *DBQuerier) FindAgentsScan(results pgx.BatchResults) ([]FindAgentsRow, error) {
+	rows, err := results.Query()
+	if err != nil {
+		return nil, fmt.Errorf("query FindAgentsBatch: %w", err)
+	}
+	defer rows.Close()
+	items := []FindAgentsRow{}
+	for rows.Next() {
+		var item FindAgentsRow
+		if err := rows.Scan(&item.AgentID, &item.Status, &item.IpAddress, &item.Version, &item.Name, &item.External, &item.LastSeen, &item.OrganizationName); err != nil {
+			return nil, fmt.Errorf("scan FindAgentsBatch row: %w", err)
+		}
+		items = append(items, item)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("close FindAgentsBatch rows: %w", err)
+	}
+	return items, err
 }
 
 const findAgentsByOrganizationSQL = `SELECT *

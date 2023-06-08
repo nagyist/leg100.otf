@@ -74,7 +74,7 @@ func (s *Creator) handle(ctx context.Context, run *run.Run) error {
 		return fmt.Errorf("unexpected run status: %s", run.Status)
 	}
 	// check whether job has already been created for phase
-	_, err := s.GetJob(ctx, GetJobOptions{RunID: run.ID, Phase: phase})
+	_, err := s.GetJobByPhase(ctx, run.ID, phase)
 	if err == nil {
 		// job already created
 		return nil

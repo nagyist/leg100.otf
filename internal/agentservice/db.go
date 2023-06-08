@@ -15,7 +15,7 @@ type (
 		internal.DB // provides access to generated SQL queries
 	}
 
-	pgresult struct {
+	agentresult struct {
 		AgentID          pgtype.Text        `json:"agent_id"`
 		Status           pgtype.Text        `json:"status"`
 		IpAddress        pgtype.Text        `json:"ip_address"`
@@ -25,7 +25,46 @@ type (
 		LastSeen         pgtype.Timestamptz `json:"last_seen"`
 		OrganizationName pgtype.Text        `json:"organization_name"`
 	}
+
+	jobresult struct {
+		JobID   pgtype.Text `json:"job_id"`
+		RunID   pgtype.Text `json:"run_id"`
+		Phase   pgtype.Text `json:"phase"`
+		AgentID pgtype.Text `json:"agent_id"`
+		Status  pgtype.Text `json:"status"`
+	}
 )
+
+func (r agentresult) toAgent() *Agent {
+	to := &Agent{
+		ID:        r.AgentID.String,
+		Status:    Status(r.Status.String),
+		IPAddress: r.IpAddress.String,
+		Version:   r.Version.String,
+		External:  r.External,
+		LastSeen:  r.LastSeen.Time.UTC(),
+	}
+	if r.Name.Status == pgtype.Present {
+		to.Name = &r.Name.String
+	}
+	if r.OrganizationName.Status == pgtype.Present {
+		to.Organization = &r.OrganizationName.String
+	}
+	return to
+}
+
+func (r jobresult) toJob() *Job {
+	to := &Job{
+		ID:     r.JobID.String,
+		Status: JobStatus(r.Status.String),
+		RunID:  r.RunID.String,
+		Phase:  internal.PhaseType(r.Phase.String),
+	}
+	if r.AgentID.Status == pgtype.Present {
+		to.AgentID = &r.AgentID.String
+	}
+	return to
+}
 
 func (db *pgdb) create(ctx context.Context, agent *Agent) error {
 	params := pggen.InsertAgentParams{
@@ -56,4 +95,42 @@ func (db *pgdb) updateStatus(ctx context.Context, id string, status Status) erro
 		LastSeen: sql.Timestamptz(internal.CurrentTimestamp()),
 	})
 	return sql.Error(err)
+}
+
+func (db *pgdb) list(ctx context.Context) (agents []*Agent, err error) {
+	results, err := db.FindAgents(ctx)
+	if err != nil {
+		return nil, sql.Error(err)
+	}
+	for _, res := range results {
+		agents = append(agents, agentresult(res).toAgent())
+	}
+	return
+}
+
+func (db *pgdb) listByOrganization(ctx context.Context, organization string) (agents []*Agent, err error) {
+	results, err := db.FindAgentsByOrganization(ctx, sql.String(organization))
+	if err != nil {
+		return nil, sql.Error(err)
+	}
+	for _, res := range results {
+		agents = append(agents, agentresult(res).toAgent())
+	}
+	return
+}
+
+func (db *pgdb) getAssignedJobByAgentID(ctx context.Context, agentID string) (job *Job, err error) {
+	result, err := db.FindAssignedJobByAgentID(ctx, sql.String(agentID))
+	if err != nil {
+		return nil, sql.Error(err)
+	}
+	return jobresult(result).toJob(), nil
+}
+
+func (db *pgdb) getJobByRunIDAndPhase(ctx context.Context, runID string, phase internal.PhaseType) (job *Job, err error) {
+	result, err := db.FindJobByRunIDAndPhase(ctx, sql.String(runID), sql.String(string(phase)))
+	if err != nil {
+		return nil, sql.Error(err)
+	}
+	return jobresult(result).toJob(), nil
 }

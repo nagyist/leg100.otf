@@ -130,12 +130,13 @@ func (q *DBQuerier) UpdateJobStatusScan(results pgx.BatchResults) (pgtype.Text, 
 	return item, nil
 }
 
-const findJobsByStatusSQL = `SELECT *
+const findAssignedJobByAgentIDSQL = `SELECT *
 FROM jobs
-WHERE status = $1
+WHERE status = 'assigned'
+AND   agent_id = $1
 ;`
 
-type FindJobsByStatusRow struct {
+type FindAssignedJobByAgentIDRow struct {
 	JobID   pgtype.Text `json:"job_id"`
 	RunID   pgtype.Text `json:"run_id"`
 	Phase   pgtype.Text `json:"phase"`
@@ -143,50 +144,68 @@ type FindJobsByStatusRow struct {
 	Status  pgtype.Text `json:"status"`
 }
 
-// FindJobsByStatus implements Querier.FindJobsByStatus.
-func (q *DBQuerier) FindJobsByStatus(ctx context.Context, status pgtype.Text) ([]FindJobsByStatusRow, error) {
-	ctx = context.WithValue(ctx, "pggen_query_name", "FindJobsByStatus")
-	rows, err := q.conn.Query(ctx, findJobsByStatusSQL, status)
-	if err != nil {
-		return nil, fmt.Errorf("query FindJobsByStatus: %w", err)
+// FindAssignedJobByAgentID implements Querier.FindAssignedJobByAgentID.
+func (q *DBQuerier) FindAssignedJobByAgentID(ctx context.Context, agentID pgtype.Text) (FindAssignedJobByAgentIDRow, error) {
+	ctx = context.WithValue(ctx, "pggen_query_name", "FindAssignedJobByAgentID")
+	row := q.conn.QueryRow(ctx, findAssignedJobByAgentIDSQL, agentID)
+	var item FindAssignedJobByAgentIDRow
+	if err := row.Scan(&item.JobID, &item.RunID, &item.Phase, &item.AgentID, &item.Status); err != nil {
+		return item, fmt.Errorf("query FindAssignedJobByAgentID: %w", err)
 	}
-	defer rows.Close()
-	items := []FindJobsByStatusRow{}
-	for rows.Next() {
-		var item FindJobsByStatusRow
-		if err := rows.Scan(&item.JobID, &item.RunID, &item.Phase, &item.AgentID, &item.Status); err != nil {
-			return nil, fmt.Errorf("scan FindJobsByStatus row: %w", err)
-		}
-		items = append(items, item)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, fmt.Errorf("close FindJobsByStatus rows: %w", err)
-	}
-	return items, err
+	return item, nil
 }
 
-// FindJobsByStatusBatch implements Querier.FindJobsByStatusBatch.
-func (q *DBQuerier) FindJobsByStatusBatch(batch genericBatch, status pgtype.Text) {
-	batch.Queue(findJobsByStatusSQL, status)
+// FindAssignedJobByAgentIDBatch implements Querier.FindAssignedJobByAgentIDBatch.
+func (q *DBQuerier) FindAssignedJobByAgentIDBatch(batch genericBatch, agentID pgtype.Text) {
+	batch.Queue(findAssignedJobByAgentIDSQL, agentID)
 }
 
-// FindJobsByStatusScan implements Querier.FindJobsByStatusScan.
-func (q *DBQuerier) FindJobsByStatusScan(results pgx.BatchResults) ([]FindJobsByStatusRow, error) {
-	rows, err := results.Query()
-	if err != nil {
-		return nil, fmt.Errorf("query FindJobsByStatusBatch: %w", err)
+// FindAssignedJobByAgentIDScan implements Querier.FindAssignedJobByAgentIDScan.
+func (q *DBQuerier) FindAssignedJobByAgentIDScan(results pgx.BatchResults) (FindAssignedJobByAgentIDRow, error) {
+	row := results.QueryRow()
+	var item FindAssignedJobByAgentIDRow
+	if err := row.Scan(&item.JobID, &item.RunID, &item.Phase, &item.AgentID, &item.Status); err != nil {
+		return item, fmt.Errorf("scan FindAssignedJobByAgentIDBatch row: %w", err)
 	}
-	defer rows.Close()
-	items := []FindJobsByStatusRow{}
-	for rows.Next() {
-		var item FindJobsByStatusRow
-		if err := rows.Scan(&item.JobID, &item.RunID, &item.Phase, &item.AgentID, &item.Status); err != nil {
-			return nil, fmt.Errorf("scan FindJobsByStatusBatch row: %w", err)
-		}
-		items = append(items, item)
+	return item, nil
+}
+
+const findJobByRunIDAndPhaseSQL = `SELECT *
+FROM jobs
+WHERE run_id = $1
+AND   phase = $2
+;`
+
+type FindJobByRunIDAndPhaseRow struct {
+	JobID   pgtype.Text `json:"job_id"`
+	RunID   pgtype.Text `json:"run_id"`
+	Phase   pgtype.Text `json:"phase"`
+	AgentID pgtype.Text `json:"agent_id"`
+	Status  pgtype.Text `json:"status"`
+}
+
+// FindJobByRunIDAndPhase implements Querier.FindJobByRunIDAndPhase.
+func (q *DBQuerier) FindJobByRunIDAndPhase(ctx context.Context, runID pgtype.Text, phase pgtype.Text) (FindJobByRunIDAndPhaseRow, error) {
+	ctx = context.WithValue(ctx, "pggen_query_name", "FindJobByRunIDAndPhase")
+	row := q.conn.QueryRow(ctx, findJobByRunIDAndPhaseSQL, runID, phase)
+	var item FindJobByRunIDAndPhaseRow
+	if err := row.Scan(&item.JobID, &item.RunID, &item.Phase, &item.AgentID, &item.Status); err != nil {
+		return item, fmt.Errorf("query FindJobByRunIDAndPhase: %w", err)
 	}
-	if err := rows.Err(); err != nil {
-		return nil, fmt.Errorf("close FindJobsByStatusBatch rows: %w", err)
+	return item, nil
+}
+
+// FindJobByRunIDAndPhaseBatch implements Querier.FindJobByRunIDAndPhaseBatch.
+func (q *DBQuerier) FindJobByRunIDAndPhaseBatch(batch genericBatch, runID pgtype.Text, phase pgtype.Text) {
+	batch.Queue(findJobByRunIDAndPhaseSQL, runID, phase)
+}
+
+// FindJobByRunIDAndPhaseScan implements Querier.FindJobByRunIDAndPhaseScan.
+func (q *DBQuerier) FindJobByRunIDAndPhaseScan(results pgx.BatchResults) (FindJobByRunIDAndPhaseRow, error) {
+	row := results.QueryRow()
+	var item FindJobByRunIDAndPhaseRow
+	if err := row.Scan(&item.JobID, &item.RunID, &item.Phase, &item.AgentID, &item.Status); err != nil {
+		return item, fmt.Errorf("scan FindJobByRunIDAndPhaseBatch row: %w", err)
 	}
-	return items, err
+	return item, nil
 }

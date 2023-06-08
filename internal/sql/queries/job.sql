@@ -30,8 +30,16 @@ WHERE job_id = pggen.arg('job_id')
 RETURNING status
 ;
 
--- name: FindJobsByStatus :many
+-- name: FindAssignedJobByAgentID :one
 SELECT *
 FROM jobs
-WHERE status = pggen.arg('status')
+WHERE status = 'assigned'
+AND   agent_id = pggen.arg('agent_id')
+;
+
+-- name: FindJobByRunIDAndPhase :one
+SELECT *
+FROM jobs
+WHERE run_id = pggen.arg('run_id')
+AND   phase = pggen.arg('phase')
 ;
