@@ -11,7 +11,6 @@ import (
 	"github.com/jackc/pgconn"
 	"github.com/jackc/pgx/v4"
 	"github.com/jackc/pgx/v4/pgxpool"
-	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/sql/pggen"
 )
 
@@ -21,10 +20,7 @@ type (
 	// DB provides access to the postgres db as well as queries generated from
 	// SQL
 	DB struct {
-		*pgxpool.Pool         // db connection pool
-		pggen.Querier         // generated queries
-		conn          conn    // current connection
-		tx            *pgx.Tx // current transaction
+		*pgxpool.Pool // db connection pool
 
 		logr.Logger
 	}
@@ -70,62 +66,18 @@ func New(ctx context.Context, opts Options) (*DB, error) {
 	}
 
 	return &DB{
-		Pool:    pool,
-		Querier: pggen.NewQuerier(pool),
-		conn:    pool,
-		Logger:  opts.Logger,
+		Pool:   pool,
+		Logger: opts.Logger,
 	}, nil
 }
 
-func (db *DB) Exec(ctx context.Context, sql string, arguments ...interface{}) (pgconn.CommandTag, error) {
-	return db.conn.Exec(ctx, sql, arguments...)
-}
+const txKey = 1
 
-// WaitAndLock obtains an exclusive session-level advisory lock. If another
-// session holds the lock with the given id then it'll wait until the other
-// session releases the lock. The given fn is called once the lock is obtained
-// and when the fn finishes the lock is released.
-func (db *DB) WaitAndLock(ctx context.Context, id int64, fn func() error) (err error) {
-	// A dedicated connection is obtained. Using a connection pool would cause
-	// problems because a lock must be released on the same connection on which
-	// it was obtained.
-	conn, err := db.Pool.Acquire(ctx)
-	if err != nil {
-		return err
+func (db *DB) Conn(ctx context.Context) *Connection {
+	if tx := ctx.Value(txKey); tx != nil {
+		return tx.(*Connection)
 	}
-	defer conn.Release()
-
-	if _, err = conn.Exec(ctx, "SELECT pg_advisory_lock($1)", id); err != nil {
-		return err
-	}
-	defer func() {
-		_, closeErr := conn.Exec(ctx, "SELECT pg_advisory_unlock($1)", id)
-		if err != nil {
-			db.Error(err, "unlocking session-level advisory lock")
-			return
-		}
-		err = closeErr
-	}()
-
-	if err = fn(); err != nil {
-		return err
-	}
-	return
-}
-
-// Tx provides the caller with a callback in which all operations are conducted
-// within a transaction.
-func (db *DB) Tx(ctx context.Context, callback func(internal.DB) error) error {
-	tx, err := db.conn.Begin(ctx)
-	if err != nil {
-		return err
-	}
-	defer tx.Rollback(ctx)
-
-	if err := callback(&DB{db.Pool, pggen.NewQuerier(tx), tx, &tx, db.Logger}); err != nil {
-		return err
-	}
-	return tx.Commit(ctx)
+	return &Connection{Querier: pggen.NewQuerier(db.Pool), conn: db.Pool}
 }
 
 func setDefaultMaxConnections(connString string, max int) (string, error) {
