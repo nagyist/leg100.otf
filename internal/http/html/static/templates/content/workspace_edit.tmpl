@@ -18,8 +18,6 @@
   {{ $canSetPermission := $.CurrentUser.CanAccessWorkspace .SetWorkspacePermissionAction .Policy }}
   {{ $canUnsetPermission := $.CurrentUser.CanAccessWorkspace .UnsetWorkspacePermissionAction .Policy }}
   {{ $canCreateRun := $.CurrentUser.CanAccessWorkspace .CreateRunAction .Policy }}
-  {{ $canAddTag := $.CurrentUser.CanAccessWorkspace .AddTagsAction .Policy }}
-  {{ $canRemoveTag := $.CurrentUser.CanAccessWorkspace .RemoveTagsAction .Policy }}
   <div class="mt-3">
     {{ with .Workspace.Connection }}
       <form action="{{ disconnectWorkspacePath $.Workspace.ID }}" method="POST">
