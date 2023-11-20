@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.1.19](https://github.com/leg100/otf/compare/v0.1.18...v0.1.19) (2023-11-20)
+
+
+### Bug Fixes
+
+* Add missing CancelRunAction to WorkspaceWriteRole ([#649](https://github.com/leg100/otf/issues/649)) ([599ddcb](https://github.com/leg100/otf/commit/599ddcb5494de845ce6fe8e91240facf3b8fb466))
+* docker-compose otfd healthcheck ([c553b58](https://github.com/leg100/otf/commit/c553b5895ff9bc8993991c872a31d74a63bc92f2))
+
 ## [0.1.18](https://github.com/leg100/otf/compare/v0.1.17...v0.1.18) (2023-10-30)
 
 
